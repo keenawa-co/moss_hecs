@@ -21,12 +21,10 @@ maintenance = { status = "actively-developed" }
 [features]
 default = ["std"]
 std = []
-# Enables derive(Bundle) and derive(Query)
 macros = ["moss_hecs_macros"]
-# Enables the serialize::column module
 column-serialize = ["serde"]
-# Enables the serialize::row module
 row-serialize = ["serde"]
+hierarchy = ["hecs-hierarchy"]
 
 [dependencies]
 moss_hecs_macros = { path = "macros", version = "0.10.0", optional = true }
@@ -40,6 +38,7 @@ spin = { version = "0.9.8", default-features = false, features = [
     "spin_mutex",
     "lazy",
 ] }
+hecs-hierarchy = { version = "0.12.1", optional = true }
 
 [dev-dependencies]
 bencher = "0.1.5"
