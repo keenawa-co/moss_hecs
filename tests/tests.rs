@@ -13,6 +13,7 @@ use moss_hecs::*;
 #[test]
 fn random_access() {
     let mut frame = Frame::new();
+
     let e = frame.spawn(("abc", 123));
     let f = frame.spawn(("def", 456, true));
     assert_eq!(*frame.get::<&&str>(e).unwrap(), "abc");

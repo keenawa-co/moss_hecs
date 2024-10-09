@@ -116,9 +116,6 @@ pub use query::Fetch;
 #[cfg(feature = "macros")]
 pub use moss_hecs_macros::{Bundle, DynamicBundleClone, Query};
 
-#[cfg(feature = "hierarchy")]
-pub use hecs_hierarchy::*;
-
 fn align(x: usize, alignment: usize) -> usize {
     debug_assert!(alignment.is_power_of_two());
     (x + alignment - 1) & (!alignment + 1)
