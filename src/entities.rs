@@ -11,7 +11,7 @@ use std::error::Error;
 
 /// Lightweight unique ID, or handle, of an entity
 ///
-/// Obtained from `World::spawn`. Can be stored to refer to an entity in the future.
+/// Obtained from `Frame::spawn`. Can be stored to refer to an entity in the future.
 ///
 /// Enable the `serde` feature on the crate to make this `Serialize`able. Some applications may be
 /// able to save space by only serializing the output of `Entity::id`.
@@ -22,9 +22,9 @@ pub struct Entity {
 }
 
 impl Entity {
-    /// An [`Entity`] that does not necessarily correspond to data in any `World`
+    /// An [`Entity`] that does not necessarily correspond to data in any `Frame`
     ///
-    /// Useful as a dummy value. It is possible (albeit unlikely) for a `World` to contain this
+    /// Useful as a dummy value. It is possible (albeit unlikely) for a `Frame` to contain this
     /// entity.
     pub const DANGLING: Entity = Entity {
         generation: match NonZeroU32::new(u32::MAX) {
@@ -39,7 +39,7 @@ impl Entity {
     /// No particular structure is guaranteed for the returned bits.
     ///
     /// Useful for storing entity IDs externally, or in conjunction with `Entity::from_bits` and
-    /// `World::spawn_at` for easy serialization. Alternatively, consider `id` for more compact
+    /// `Frame::spawn_at` for easy serialization. Alternatively, consider `id` for more compact
     /// representation.
     pub const fn to_bits(self) -> NonZeroU64 {
         unsafe {
@@ -51,7 +51,7 @@ impl Entity {
     /// else `None`
     ///
     /// Useful for storing entity IDs externally, or in conjunction with `Entity::to_bits` and
-    /// `World::spawn_at` for easy serialization.
+    /// `Frame::spawn_at` for easy serialization.
     pub const fn from_bits(bits: u64) -> Option<Self> {
         Some(Self {
             // // `?` is not yet supported in const fns
@@ -67,9 +67,9 @@ impl Entity {
     ///
     /// No two simultaneously-live entities share the same ID, but dead entities' IDs may collide
     /// with both live and dead entities. Useful for compactly representing entities within a
-    /// specific snapshot of the world, such as when serializing.
+    /// specific snapshot of the frame, such as when serializing.
     ///
-    /// See also `World::find_entity_from_id`.
+    /// See also `Frame::find_entity_from_id`.
     pub const fn id(self) -> u32 {
         self.id
     }

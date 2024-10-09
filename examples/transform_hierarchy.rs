@@ -14,29 +14,29 @@ struct Parent {
 }
 
 fn main() {
-    let mut world = World::new();
+    let mut frame = Frame::new();
 
     // Spawn entities with no parent
-    let root = world.spawn((Transform(3, 4),));
-    let _other_root = world.spawn((Transform(1, 2),));
+    let root = frame.spawn((Transform(3, 4),));
+    let _other_root = frame.spawn((Transform(1, 2),));
 
     // Spawn some child entities, including dummy transform components that will later be
     // overwritten with derived absolute transforms
-    let child = world.spawn((
+    let child = frame.spawn((
         Parent {
             entity: root,
             from_child: Transform(1, 1),
         },
         Transform::default(),
     ));
-    let _other_child = world.spawn((
+    let _other_child = frame.spawn((
         Parent {
             entity: root,
             from_child: Transform(0, 0),
         },
         Transform::default(),
     ));
-    let grandchild = world.spawn((
+    let grandchild = frame.spawn((
         Parent {
             entity: child,
             from_child: Transform(-1, 0),
@@ -44,42 +44,42 @@ fn main() {
         Transform::default(),
     ));
 
-    evaluate_relative_transforms(&mut world);
+    evaluate_relative_transforms(&mut frame);
 
     // Child entities' transforms are derived recursively from their relationship to their parent
-    assert_eq!(*world.get::<&Transform>(child).unwrap(), Transform(4, 5));
+    assert_eq!(*frame.get::<&Transform>(child).unwrap(), Transform(4, 5));
     assert_eq!(
-        *world.get::<&Transform>(grandchild).unwrap(),
+        *frame.get::<&Transform>(grandchild).unwrap(),
         Transform(3, 5)
     );
 
     // Moving a parent and re-evaluating moves its children
-    *world.get::<&mut Transform>(root).unwrap() = Transform(2, 2);
-    evaluate_relative_transforms(&mut world);
-    assert_eq!(*world.get::<&Transform>(child).unwrap(), Transform(3, 3));
+    *frame.get::<&mut Transform>(root).unwrap() = Transform(2, 2);
+    evaluate_relative_transforms(&mut frame);
+    assert_eq!(*frame.get::<&Transform>(child).unwrap(), Transform(3, 3));
     assert_eq!(
-        *world.get::<&Transform>(grandchild).unwrap(),
+        *frame.get::<&Transform>(grandchild).unwrap(),
         Transform(2, 3)
     );
 }
 
 /// Update absolute transforms based on relative transforms
-fn evaluate_relative_transforms(world: &mut World) {
+fn evaluate_relative_transforms(frame: &mut Frame) {
     // Construct a view for efficient random access into the set of all entities that have
     // parents. Views allow work like dynamic borrow checking or component storage look-up to be
-    // done once rather than per-entity as in `World::get`.
-    let mut parents = world.query::<&Parent>();
+    // done once rather than per-entity as in `Frame::get`.
+    let mut parents = frame.query::<&Parent>();
     let parents = parents.view();
 
     // View of entities that don't have parents, i.e. roots of the transform hierarchy
-    let mut roots = world.query::<&Transform>().without::<&Parent>();
+    let mut roots = frame.query::<&Transform>().without::<&Parent>();
     let roots = roots.view();
 
     // This query can coexist with the `roots` view without illegal aliasing of `Transform`
     // references because the inclusion of `&Parent` in the query, and its exclusion from the view,
     // guarantees that they will never overlap. Similarly, it can coexist with `parents` because
     // that view does not reference `Transform`s at all.
-    for (_entity, (parent, absolute)) in world.query::<(&Parent, &mut Transform)>().iter() {
+    for (_entity, (parent, absolute)) in frame.query::<(&Parent, &mut Transform)>().iter() {
         // Walk the hierarchy from this entity to the root, accumulating the entity's absolute
         // transform. This does a small amount of redundant work for intermediate levels of deeper
         // hierarchies, but unlike a top-down traversal, avoids tracking entity child lists and is

@@ -38,7 +38,7 @@ fn manhattan_dist(x0: i32, x1: i32, y0: i32, y1: i32) -> i32 {
     dx + dy
 }
 
-fn batch_spawn_entities(world: &mut World, n: usize) {
+fn batch_spawn_entities(frame: &mut Frame, n: usize) {
     let mut rng = thread_rng();
 
     let to_spawn = (0..n).map(|_| {
@@ -54,15 +54,15 @@ fn batch_spawn_entities(world: &mut World, n: usize) {
         (pos, s, hp, dmg, kc)
     });
 
-    world.spawn_batch(to_spawn);
-    // We could instead call `world.spawn((pos, s, hp, dmg, kc))` for each entity, but `spawn_batch`
+    frame.spawn_batch(to_spawn);
+    // We could instead call `frame.spawn((pos, s, hp, dmg, kc))` for each entity, but `spawn_batch`
     // is faster.
 }
 
-fn system_integrate_motion(world: &mut World, query: &mut PreparedQuery<(&mut Position, &Speed)>) {
+fn system_integrate_motion(frame: &mut Frame, query: &mut PreparedQuery<(&mut Position, &Speed)>) {
     let mut rng = thread_rng();
 
-    for (id, (pos, s)) in query.query_mut(world) {
+    for (id, (pos, s)) in query.query_mut(frame) {
         let change = (rng.gen_range(-s.0..s.0), rng.gen_range(-s.0..s.0));
         pos.x += change.0;
         pos.y += change.1;
@@ -71,15 +71,15 @@ fn system_integrate_motion(world: &mut World, query: &mut PreparedQuery<(&mut Po
 }
 
 // In this system entities find the closest entity and fire at them
-fn system_fire_at_closest(world: &mut World) {
+fn system_fire_at_closest(frame: &mut Frame) {
     for (id0, (pos0, dmg0, kc0)) in
-        &mut world.query::<With<(&Position, &Damage, &mut KillCount), &Health>>()
+        &mut frame.query::<With<(&Position, &Damage, &mut KillCount), &Health>>()
     {
         // Find closest:
         // Nested queries are O(n^2) and you usually want to avoid that by using some sort of
         // spatial index like a quadtree or more general BVH, which we don't bother with here since
         // it's out of scope for the example.
-        let closest = world
+        let closest = frame
             .query::<With<&Position, &Health>>()
             .iter()
             .filter(|(id1, _)| *id1 != id0)
@@ -97,12 +97,12 @@ fn system_fire_at_closest(world: &mut World) {
         // Deal damage:
         /*
                 // Get target unit hp like this:
-                let mut hp1 = world.query_one::<&mut Health>(closest_id.unwrap()).unwrap();
+                let mut hp1 = frame.query_one::<&mut Health>(closest_id.unwrap()).unwrap();
                 let hp1 = hp1.get().unwrap();
         */
 
         // Or like this:
-        let mut hp1 = world.get::<&mut Health>(closest).unwrap();
+        let mut hp1 = frame.get::<&mut Health>(closest).unwrap();
 
         // Is target unit still alive?
         if hp1.0 > 0 {
@@ -121,32 +121,32 @@ fn system_fire_at_closest(world: &mut World) {
     }
 }
 
-fn system_remove_dead(world: &mut World) {
+fn system_remove_dead(frame: &mut Frame) {
     // Here we query entities with 0 or less hp and despawn them
     let mut to_remove: Vec<Entity> = Vec::new();
-    for (id, hp) in &mut world.query::<&Health>() {
+    for (id, hp) in &mut frame.query::<&Health>() {
         if hp.0 <= 0 {
             to_remove.push(id);
         }
     }
 
     for entity in to_remove {
-        world.despawn(entity).unwrap();
+        frame.despawn(entity).unwrap();
     }
 }
 
-fn print_world_state(world: &mut World) {
+fn print_frame_state(frame: &mut Frame) {
     println!("\nEntity stats:");
-    for (id, (hp, pos, dmg, kc)) in &mut world.query::<(&Health, &Position, &Damage, &KillCount)>()
+    for (id, (hp, pos, dmg, kc)) in &mut frame.query::<(&Health, &Position, &Damage, &KillCount)>()
     {
         println!("ID: {:?}, {:?}, {:?}, {:?}, {:?}", id, hp, dmg, pos, kc);
     }
 }
 
 fn main() {
-    let mut world = World::new();
+    let mut frame = Frame::new();
 
-    batch_spawn_entities(&mut world, 5);
+    batch_spawn_entities(&mut frame, 5);
 
     let mut motion_query = PreparedQuery::<(&mut Position, &Speed)>::default();
 
@@ -160,13 +160,13 @@ fn main() {
         match input.trim() {
             "" => {
                 // Run all simulation systems:
-                system_integrate_motion(&mut world, &mut motion_query);
-                system_fire_at_closest(&mut world);
-                system_remove_dead(&mut world);
+                system_integrate_motion(&mut frame, &mut motion_query);
+                system_fire_at_closest(&mut frame);
+                system_remove_dead(&mut frame);
             }
             "q" => break,
             "?" => {
-                print_world_state(&mut world);
+                print_frame_state(&mut frame);
             }
             _ => {}
         }

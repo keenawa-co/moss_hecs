@@ -18,8 +18,8 @@ use syn::{parse_macro_input, DeriveInput};
 
 /// Implement `Bundle` for a struct
 ///
-/// Bundles can be passed directly to `World::spawn` and `World::insert`, and obtained from
-/// `World::remove`. Can be convenient when combined with other derives like `serde::Deserialize`.
+/// Bundles can be passed directly to `Frame::spawn` and `Frame::insert`, and obtained from
+/// `Frame::remove`. Can be convenient when combined with other derives like `serde::Deserialize`.
 ///
 /// # Example
 /// ```
@@ -30,9 +30,9 @@ use syn::{parse_macro_input, DeriveInput};
 ///     y: char,
 /// }
 ///
-/// let mut world = World::new();
-/// let e = world.spawn(Foo { x: 42, y: 'a' });
-/// assert_eq!(*world.get::<&i32>(e).unwrap(), 42);
+/// let mut frame = Frame::new();
+/// let e = frame.spawn(Foo { x: 42, y: 'a' });
+/// assert_eq!(*frame.get::<&i32>(e).unwrap(), 42);
 /// ```
 #[proc_macro_derive(Bundle)]
 pub fn derive_bundle(input: TokenStream) -> TokenStream {
@@ -65,7 +65,7 @@ pub fn derive_dynamic_bundle_clone(input: TokenStream) -> TokenStream {
 
 /// Implement `Query` for a struct
 ///
-/// Queries structs can be passed to the type parameter of `World::query`. They must have exactly
+/// Queries structs can be passed to the type parameter of `Frame::query`. They must have exactly
 /// one lifetime parameter, and all of their fields must be queries (e.g. references) using that
 /// lifetime.
 ///
@@ -78,10 +78,10 @@ pub fn derive_dynamic_bundle_clone(input: TokenStream) -> TokenStream {
 ///     y: &'a mut bool,
 /// }
 ///
-/// let mut world = World::new();
-/// let e = world.spawn((42, false));
+/// let mut frame = Frame::new();
+/// let e = frame.spawn((42, false));
 /// assert_eq!(
-///     world.query_one_mut::<Foo>(e).unwrap(),
+///     frame.query_one_mut::<Foo>(e).unwrap(),
 ///     Foo {
 ///         x: &42,
 ///         y: &mut false

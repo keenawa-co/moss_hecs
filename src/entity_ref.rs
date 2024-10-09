@@ -52,9 +52,9 @@ impl<'a> EntityRef<'a> {
     /// # Example
     /// ```
     /// # use moss_hecs::*;
-    /// let mut world = World::new();
-    /// let a = world.spawn((42, "abc"));
-    /// let e = world.entity(a).unwrap();
+    /// let mut frame = Frame::new();
+    /// let a = frame.spawn((42, "abc"));
+    /// let e = frame.entity(a).unwrap();
     /// *e.get::<&mut i32>().unwrap() = 17;
     /// assert_eq!(*e.get::<&i32>().unwrap(), 17);
     /// ```
@@ -67,16 +67,16 @@ impl<'a> EntityRef<'a> {
 
     /// Run a query against this entity
     ///
-    /// Equivalent to invoking [`World::query_one`](crate::World::query_one) on the entity. May
+    /// Equivalent to invoking [`Frame::query_one`](crate::Frame::query_one) on the entity. May
     /// outlive `self`.
     ///
     /// # Example
     /// ```
     /// # use moss_hecs::*;
-    /// let mut world = World::new();
-    /// let a = world.spawn((123, true, "abc"));
+    /// let mut frame = Frame::new();
+    /// let a = frame.spawn((123, true, "abc"));
     /// // The returned query must outlive the borrow made by `get`
-    /// let mut query = world.entity(a).unwrap().query::<(&mut i32, &bool)>();
+    /// let mut query = frame.entity(a).unwrap().query::<(&mut i32, &bool)>();
     /// let (number, flag) = query.get().unwrap();
     /// if *flag { *number *= 2; }
     /// assert_eq!(*number, 246);

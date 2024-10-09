@@ -2,7 +2,7 @@ use core::mem;
 
 use alloc::vec::Vec;
 
-use crate::{Component, Entity, PreparedQuery, With, Without, World};
+use crate::{Component, Entity, Frame, PreparedQuery, With, Without};
 
 /// Helper to track changes in `T` components
 ///
@@ -13,9 +13,9 @@ use crate::{Component, Entity, PreparedQuery, With, Without, World};
 /// which are expensive to compare and/or clone, consider instead tracking changes manually, e.g.
 /// by setting a flag in the component's `DerefMut` implementation.
 ///
-/// Always use exactly one `ChangeTracker` per [`World`] per component type of interest. Using
-/// multiple trackers of the same `T` on the same world, or using the same tracker across multiple
-/// worlds, will produce unpredictable results.
+/// Always use exactly one `ChangeTracker` per [`Frame`] per component type of interest. Using
+/// multiple trackers of the same `T` on the same frame, or using the same tracker across multiple
+/// frames, will produce unpredictable results.
 pub struct ChangeTracker<T: Component> {
     added: PreparedQuery<Without<&'static T, &'static Previous<T>>>,
     changed: PreparedQuery<(&'static T, &'static mut Previous<T>)>,
@@ -38,14 +38,14 @@ impl<T: Component> ChangeTracker<T> {
         }
     }
 
-    /// Determine the changes in `T` components in `world` since the previous call
-    pub fn track<'a>(&'a mut self, world: &'a mut World) -> Changes<'a, T>
+    /// Determine the changes in `T` components in `frame` since the previous call
+    pub fn track<'a>(&'a mut self, frame: &'a mut Frame) -> Changes<'a, T>
     where
         T: Clone + PartialEq,
     {
         Changes {
             tracker: self,
-            world,
+            frame: frame,
             added: false,
             changed: false,
             removed: false,
@@ -67,7 +67,7 @@ where
     T: Component + Clone + PartialEq,
 {
     tracker: &'a mut ChangeTracker<T>,
-    world: &'a mut World,
+    frame: &'a mut Frame,
     added: bool,
     changed: bool,
     removed: bool,
@@ -85,7 +85,7 @@ where
         DrainOnDrop(
             self.tracker
                 .added
-                .query_mut(self.world)
+                .query_mut(self.frame)
                 .inspect(|&(e, x)| self.tracker.added_components.push((e, x.clone()))),
         )
     }
@@ -97,7 +97,7 @@ where
         DrainOnDrop(
             self.tracker
                 .changed
-                .query_mut(self.world)
+                .query_mut(self.frame)
                 .filter_map(|(e, (new, old))| {
                     (*new != old.0).then(|| {
                         let old = mem::replace(&mut old.0, new.clone());
@@ -116,12 +116,12 @@ where
         // take ownership of components directly.
         self.tracker
             .removed_components
-            .extend(self.tracker.removed.query_mut(self.world).map(|(e, ())| e));
+            .extend(self.tracker.removed.query_mut(self.frame).map(|(e, ())| e));
         DrainOnDrop(
             self.tracker
                 .removed_components
                 .drain(..)
-                .map(|e| (e, self.world.remove_one::<Previous<T>>(e).unwrap().0)),
+                .map(|e| (e, self.frame.remove_one::<Previous<T>>(e).unwrap().0)),
         )
     }
 }
@@ -135,7 +135,7 @@ where
             _ = self.added();
         }
         for (entity, component) in self.tracker.added_components.drain(..) {
-            self.world.insert_one(entity, Previous(component)).unwrap();
+            self.frame.insert_one(entity, Previous(component)).unwrap();
         }
         if !self.changed {
             _ = self.changed();
@@ -176,15 +176,15 @@ mod tests {
 
     #[test]
     fn smoke() {
-        let mut world = World::new();
+        let mut frame = Frame::new();
 
-        let a = world.spawn((42,));
-        let b = world.spawn((17, false));
-        let c = world.spawn((true,));
+        let a = frame.spawn((42,));
+        let b = frame.spawn((17, false));
+        let c = frame.spawn((true,));
 
         let mut tracker = ChangeTracker::<i32>::new();
         {
-            let mut changes = tracker.track(&mut world);
+            let mut changes = tracker.track(&mut frame);
             let added = changes.added().collect::<Vec<_>>();
             assert_eq!(added.len(), 2);
             assert!(added.contains(&(a, &42)));
@@ -193,17 +193,17 @@ mod tests {
             assert_eq!(changes.removed().count(), 0);
         }
 
-        world.remove_one::<i32>(a).unwrap();
-        *world.get::<&mut i32>(b).unwrap() = 26;
-        world.insert_one(c, 74).unwrap();
+        frame.remove_one::<i32>(a).unwrap();
+        *frame.get::<&mut i32>(b).unwrap() = 26;
+        frame.insert_one(c, 74).unwrap();
         {
-            let mut changes = tracker.track(&mut world);
+            let mut changes = tracker.track(&mut frame);
             assert_eq!(changes.removed().collect::<Vec<_>>(), [(a, 42)]);
             assert_eq!(changes.changed().collect::<Vec<_>>(), [(b, 17, &26)]);
             assert_eq!(changes.added().collect::<Vec<_>>(), [(c, &74)]);
         }
         {
-            let mut changes = tracker.track(&mut world);
+            let mut changes = tracker.track(&mut frame);
             assert_eq!(changes.removed().collect::<Vec<_>>(), []);
             assert_eq!(changes.changed().collect::<Vec<_>>(), []);
             assert_eq!(changes.added().collect::<Vec<_>>(), []);

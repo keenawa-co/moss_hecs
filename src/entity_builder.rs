@@ -22,12 +22,12 @@ use crate::{align, Component, ComponentRef, ComponentRefShared, DynamicBundle};
 ///
 /// ```
 /// # use moss_hecs::*;
-/// let mut world = World::new();
+/// let mut frame = Frame::new();
 /// let mut builder = EntityBuilder::new();
 /// builder.add(123).add("abc");
-/// let e = world.spawn(builder.build()); // builder can now be reused
-/// assert_eq!(*world.get::<&i32>(e).unwrap(), 123);
-/// assert_eq!(*world.get::<&&str>(e).unwrap(), "abc");
+/// let e = frame.spawn(builder.build()); // builder can now be reused
+/// assert_eq!(*frame.get::<&i32>(e).unwrap(), 123);
+/// assert_eq!(*frame.get::<&&str>(e).unwrap(), "abc");
 /// ```
 #[derive(Default)]
 pub struct EntityBuilder {
@@ -105,7 +105,7 @@ impl EntityBuilder {
 }
 
 /// The output of an [`EntityBuilder`], suitable for passing to
-/// [`World::spawn`](crate::World::spawn) or [`World::insert`](crate::World::insert)
+/// [`Frame::spawn`](crate::Frame::spawn) or [`Frame::insert`](crate::Frame::insert)
 pub struct BuiltEntity<'a> {
     builder: &'a mut Common<()>,
 }
@@ -144,16 +144,16 @@ impl Drop for BuiltEntity<'_> {
 ///
 /// ```
 /// # use moss_hecs::*;
-/// let mut world = World::new();
+/// let mut frame = Frame::new();
 /// let mut builder = EntityBuilderClone::new();
 /// builder.add(123).add("abc");
 /// let bundle = builder.build();
-/// let e = world.spawn(&bundle);
-/// let f = world.spawn(&bundle); // `&bundle` can be used many times
-/// assert_eq!(*world.get::<&i32>(e).unwrap(), 123);
-/// assert_eq!(*world.get::<&&str>(e).unwrap(), "abc");
-/// assert_eq!(*world.get::<&i32>(f).unwrap(), 123);
-/// assert_eq!(*world.get::<&&str>(f).unwrap(), "abc");
+/// let e = frame.spawn(&bundle);
+/// let f = frame.spawn(&bundle); // `&bundle` can be used many times
+/// assert_eq!(*frame.get::<&i32>(e).unwrap(), 123);
+/// assert_eq!(*frame.get::<&&str>(e).unwrap(), "abc");
+/// assert_eq!(*frame.get::<&i32>(f).unwrap(), 123);
+/// assert_eq!(*frame.get::<&&str>(f).unwrap(), "abc");
 /// ```
 #[derive(Clone, Default)]
 pub struct EntityBuilderClone {

@@ -1,7 +1,7 @@
-//! Convenience tools for serializing [`World`](crate::World)s
+//! Convenience tools for serializing [`Frame`](crate::Frame)s
 //!
 //! [`Component`](crate::Component)s are not necessarily serializable, so we cannot directly
-//! implement [`serde::Serialize`] for [`World`](crate::World). The helpers defined in this module
+//! implement [`serde::Serialize`] for [`Frame`](crate::Frame). The helpers defined in this module
 //! allow serialization and deserialization based on purpose-defined traits to control the
 //! procedures explicitly.
 //!

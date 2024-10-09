@@ -2,7 +2,7 @@ use alloc::vec::Vec;
 
 use crate::{entities::Entities, Archetype, DynamicBundle, Entity, TypeInfo};
 
-/// An entity removed from a `World`
+/// An entity removed from a `Frame`
 pub struct TakenEntity<'a> {
     entities: &'a mut Entities,
     entity: Entity,

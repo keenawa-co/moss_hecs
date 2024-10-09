@@ -7,8 +7,8 @@
 
 //! A handy ECS
 //!
-//! moss_hecs provides a high-performance, minimalist entity-component-system (ECS) world. It is a
-//! library, not a framework. In place of an explicit "System" abstraction, a `World`'s entities are
+//! moss_hecs provides a high-performance, minimalist entity-component-system (ECS) frame. It is a
+//! library, not a framework. In place of an explicit "System" abstraction, a `Frame`'s entities are
 //! easily queried from regular code. Organize your application however you like!
 //!
 //! In order of importance, moss_hecs pursues:
@@ -19,17 +19,17 @@
 //!
 //! ```
 //! # use moss_hecs::*;
-//! let mut world = World::new();
+//! let mut frame = Frame::new();
 //! // Nearly any type can be used as a component with zero boilerplate
-//! let a = world.spawn((123, true, "abc"));
-//! let b = world.spawn((42, false));
+//! let a = frame.spawn((123, true, "abc"));
+//! let b = frame.spawn((42, false));
 //! // Systems can be simple for loops
-//! for (id, (number, &flag)) in world.query_mut::<(&mut i32, &bool)>() {
+//! for (id, (number, &flag)) in frame.query_mut::<(&mut i32, &bool)>() {
 //!   if flag { *number *= 2; }
 //! }
 //! // Random access is simple and safe
-//! assert_eq!(*world.get::<&i32>(a).unwrap(), 246);
-//! assert_eq!(*world.get::<&i32>(b).unwrap(), 42);
+//! assert_eq!(*frame.get::<&i32>(a).unwrap(), 246);
+//! assert_eq!(*frame.get::<&i32>(b).unwrap(), 42);
 //! ```
 
 #![warn(missing_docs)]
@@ -77,12 +77,12 @@ mod command_buffer;
 mod entities;
 mod entity_builder;
 mod entity_ref;
+mod frame;
 mod query;
 mod query_one;
 #[cfg(any(feature = "row-serialize", feature = "column-serialize"))]
 pub mod serialize;
 mod take;
-mod world;
 
 pub use archetype::{Archetype, ArchetypeColumn, ArchetypeColumnMut, TypeIdMap, TypeInfo};
 pub use batch::{BatchIncomplete, BatchWriter, ColumnBatch, ColumnBatchBuilder, ColumnBatchType};
@@ -95,6 +95,10 @@ pub use command_buffer::CommandBuffer;
 pub use entities::{Entity, NoSuchEntity};
 pub use entity_builder::{BuiltEntity, BuiltEntityClone, EntityBuilder, EntityBuilderClone};
 pub use entity_ref::{ComponentRef, ComponentRefShared, EntityRef, Ref, RefMut};
+pub use frame::{
+    ArchetypesGeneration, Component, ComponentError, Frame, Iter, QueryOneError, SpawnBatchIter,
+    SpawnColumnBatchIter,
+};
 pub use query::{
     Access, Batch, BatchedIter, Or, PreparedQuery, PreparedQueryBorrow, PreparedQueryIter,
     PreparedView, Query, QueryBorrow, QueryIter, QueryMut, QueryShared, Satisfies, View,
@@ -102,10 +106,6 @@ pub use query::{
 };
 pub use query_one::QueryOne;
 pub use take::TakenEntity;
-pub use world::{
-    ArchetypesGeneration, Component, ComponentError, Iter, QueryOneError, SpawnBatchIter,
-    SpawnColumnBatchIter, World,
-};
 
 // Unstable implementation details needed by the macros
 #[doc(hidden)]

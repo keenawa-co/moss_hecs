@@ -15,20 +15,20 @@ use crate::alloc::vec::Vec;
 use crate::archetype::TypeInfo;
 use crate::{align, DynamicBundle};
 use crate::{Bundle, Entity};
-use crate::{Component, World};
+use crate::{Component, Frame};
 
-/// Records operations for future application to a [`World`]
+/// Records operations for future application to a [`Frame`]
 ///
 /// Useful when operations cannot be applied directly due to ordering concerns or borrow checking.
 ///
 /// ```
 /// # use moss_hecs::*;
-/// let mut world = World::new();
-/// let entity = world.reserve_entity();
+/// let mut frame = Frame::new();
+/// let entity = frame.reserve_entity();
 /// let mut cmd = CommandBuffer::new();
 /// cmd.insert(entity, (true, 42));
-/// cmd.run_on(&mut world); // cmd can now be reused
-/// assert_eq!(*world.get::<&i32>(entity).unwrap(), 42);
+/// cmd.run_on(&mut frame); // cmd can now be reused
+/// assert_eq!(*frame.get::<&i32>(entity).unwrap(), 42);
 /// ```
 pub struct CommandBuffer {
     cmds: Vec<Cmd>,
@@ -79,7 +79,7 @@ impl CommandBuffer {
 
     /// Add components from `bundle` to `entity`, if it exists
     ///
-    /// Pairs well with [`World::reserve_entity`] to spawn entities with a known handle.
+    /// Pairs well with [`Frame::reserve_entity`] to spawn entities with a known handle.
     ///
     /// When inserting a single component, see [`insert_one`](Self::insert_one) for convenience.
     pub fn insert(&mut self, entity: Entity, components: impl DynamicBundle) {
@@ -105,8 +105,8 @@ impl CommandBuffer {
     ///
     /// When removing a single component, see [`remove_one`](Self::remove_one) for convenience.
     pub fn remove<T: Bundle + 'static>(&mut self, ent: Entity) {
-        fn remove_bundle_and_ignore_result<T: Bundle + 'static>(world: &mut World, ents: Entity) {
-            let _ = world.remove::<T>(ents);
+        fn remove_bundle_and_ignore_result<T: Bundle + 'static>(frame: &mut Frame, ents: Entity) {
+            let _ = frame.remove::<T>(ents);
         }
         self.cmds.push(Cmd::Remove(RemovedComps {
             remove: remove_bundle_and_ignore_result::<T>,
@@ -121,14 +121,14 @@ impl CommandBuffer {
         self.remove::<(T,)>(ent);
     }
 
-    /// Despawn `entity` from World
+    /// Despawn `entity` from Frame
     pub fn despawn(&mut self, entity: Entity) {
         self.cmds.push(Cmd::Despawn(entity));
     }
 
     /// Spawn a new entity with `components`
     ///
-    /// If the [`Entity`] is needed immediately, consider combining [`World::reserve_entity`] with
+    /// If the [`Entity`] is needed immediately, consider combining [`Frame::reserve_entity`] with
     /// [`insert`](CommandBuffer::insert) instead.
     pub fn spawn(&mut self, components: impl DynamicBundle) {
         let first_component = self.components.len();
@@ -142,8 +142,8 @@ impl CommandBuffer {
         }));
     }
 
-    /// Run recorded commands on `world`, clearing the command buffer
-    pub fn run_on(&mut self, world: &mut World) {
+    /// Run recorded commands on `frame`, clearing the command buffer
+    pub fn run_on(&mut self, frame: &mut Frame) {
         for i in 0..self.cmds.len() {
             match mem::replace(&mut self.cmds[i], Cmd::Despawn(Entity::DANGLING)) {
                 Cmd::SpawnOrInsert(entity) => {
@@ -151,18 +151,18 @@ impl CommandBuffer {
                     match entity.entity {
                         Some(entity) => {
                             // If `entity` no longer exists, quietly drop the components.
-                            let _ = world.insert(entity, components);
+                            let _ = frame.insert(entity, components);
                         }
                         None => {
-                            world.spawn(components);
+                            frame.spawn(components);
                         }
                     }
                 }
                 Cmd::Remove(remove) => {
-                    (remove.remove)(world, remove.entity);
+                    (remove.remove)(frame, remove.entity);
                 }
                 Cmd::Despawn(entity) => {
-                    let _ = world.despawn(entity);
+                    let _ = frame.despawn(entity);
                 }
             }
         }
@@ -227,7 +227,7 @@ impl Default for CommandBuffer {
 }
 
 /// The output of an '[CommandBuffer]` suitable for passing to
-/// [`World::spawn_into`](crate::World::spawn_into)
+/// [`Frame::spawn_into`](crate::Frame::spawn_into)
 struct RecordedEntity<'a> {
     cmd: &'a mut CommandBuffer,
     components: Range<usize>,
@@ -286,7 +286,7 @@ struct EntityIndex {
 
 /// Data required to remove components from 'entity'
 struct RemovedComps {
-    remove: fn(&mut World, Entity),
+    remove: fn(&mut Frame, Entity),
     entity: Entity,
 }
 
@@ -303,18 +303,18 @@ mod tests {
 
     #[test]
     fn populate_archetypes() {
-        let mut world = World::new();
+        let mut frame = Frame::new();
         let mut buffer = CommandBuffer::new();
-        let ent = world.reserve_entity();
-        let enta = world.reserve_entity();
-        let entb = world.reserve_entity();
-        let entc = world.reserve_entity();
+        let ent = frame.reserve_entity();
+        let enta = frame.reserve_entity();
+        let entb = frame.reserve_entity();
+        let entc = frame.reserve_entity();
         buffer.insert(ent, (true, "a"));
         buffer.insert(entc, (true, "a"));
         buffer.insert(enta, (1, 1.0));
         buffer.insert(entb, (1.0, "a"));
-        buffer.run_on(&mut world);
-        assert_eq!(world.archetypes().len(), 4);
+        buffer.run_on(&mut frame);
+        assert_eq!(frame.archetypes().len(), 4);
     }
 
     #[test]
@@ -324,47 +324,47 @@ mod tests {
         #[derive(Clone)]
         struct A;
 
-        let mut world = World::new();
+        let mut frame = Frame::new();
 
         // Get two IDs
-        let a = world.spawn((A,));
-        let b = world.spawn((A,));
+        let a = frame.spawn((A,));
+        let b = frame.spawn((A,));
 
         // Invalidate them both
-        world.clear();
+        frame.clear();
 
         let mut cmd = CommandBuffer::new();
         cmd.insert_one(a, A);
         cmd.insert_one(b, A);
 
         // Make `a` valid again
-        world.spawn_at(a, ());
+        frame.spawn_at(a, ());
 
         // The insert to `a` should succeed
-        cmd.run_on(&mut world);
+        cmd.run_on(&mut frame);
 
-        assert!(world.satisfies::<&A>(a).unwrap());
+        assert!(frame.satisfies::<&A>(a).unwrap());
     }
 
     #[test]
     fn insert_then_remove() {
-        let mut world = World::new();
-        let a = world.spawn(());
+        let mut frame = Frame::new();
+        let a = frame.spawn(());
         let mut cmd = CommandBuffer::new();
         cmd.insert_one(a, 42i32);
         cmd.remove_one::<i32>(a);
-        cmd.run_on(&mut world);
-        assert!(!world.satisfies::<&i32>(a).unwrap());
+        cmd.run_on(&mut frame);
+        assert!(!frame.satisfies::<&i32>(a).unwrap());
     }
 
     #[test]
     fn remove_then_insert() {
-        let mut world = World::new();
-        let a = world.spawn((17i32,));
+        let mut frame = Frame::new();
+        let a = frame.spawn((17i32,));
         let mut cmd = CommandBuffer::new();
         cmd.remove_one::<i32>(a);
         cmd.insert_one(a, 42i32);
-        cmd.run_on(&mut world);
-        assert_eq!(*world.get::<&i32>(a).unwrap(), 42);
+        cmd.run_on(&mut frame);
+        assert_eq!(*frame.get::<&i32>(a).unwrap(), 42);
     }
 }

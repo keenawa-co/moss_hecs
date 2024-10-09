@@ -13,9 +13,9 @@ use core::slice::Iter as SliceIter;
 use crate::alloc::{boxed::Box, vec::Vec};
 use crate::archetype::Archetype;
 use crate::entities::EntityMeta;
-use crate::{Component, Entity, World};
+use crate::{Component, Entity, Frame};
 
-/// A collection of component types to fetch from a [`World`](crate::World)
+/// A collection of component types to fetch from a [`Frame`](crate::Frame)
 ///
 /// The interface of this trait is a private implementation detail.
 pub trait Query {
@@ -385,11 +385,11 @@ unsafe impl<L: Fetch, R: Fetch> Fetch for FetchOr<L, R> {
 /// # Example
 /// ```
 /// # use moss_hecs::*;
-/// let mut world = World::new();
-/// let a = world.spawn((123, true, "abc"));
-/// let b = world.spawn((456, false));
-/// let c = world.spawn((42, "def"));
-/// let entities = world.query::<Without<&i32, &bool>>()
+/// let mut frame = Frame::new();
+/// let a = frame.spawn((123, true, "abc"));
+/// let b = frame.spawn((456, false));
+/// let c = frame.spawn((42, "def"));
+/// let entities = frame.query::<Without<&i32, &bool>>()
 ///     .iter()
 ///     .map(|(e, &i)| (e, i))
 ///     .collect::<Vec<_>>();
@@ -462,11 +462,11 @@ impl<F: Clone, G> Clone for FetchWithout<F, G> {
 /// # Example
 /// ```
 /// # use moss_hecs::*;
-/// let mut world = World::new();
-/// let a = world.spawn((123, true, "abc"));
-/// let b = world.spawn((456, false));
-/// let c = world.spawn((42, "def"));
-/// let entities = world.query::<With<&i32, &bool>>()
+/// let mut frame = Frame::new();
+/// let a = frame.spawn((123, true, "abc"));
+/// let b = frame.spawn((456, false));
+/// let c = frame.spawn((42, "def"));
+/// let entities = frame.query::<With<&i32, &bool>>()
 ///     .iter()
 ///     .map(|(e, &i)| (e, i))
 ///     .collect::<Vec<_>>();
@@ -539,11 +539,11 @@ impl<F: Clone, G> Clone for FetchWith<F, G> {
 /// # Example
 /// ```
 /// # use moss_hecs::*;
-/// let mut world = World::new();
-/// let a = world.spawn((123, true, "abc"));
-/// let b = world.spawn((456, false));
-/// let c = world.spawn((42, "def"));
-/// let entities = world.query::<Satisfies<&bool>>()
+/// let mut frame = Frame::new();
+/// let a = frame.spawn((123, true, "abc"));
+/// let b = frame.spawn((456, false));
+/// let c = frame.spawn((42, "def"));
+/// let entities = frame.query::<Satisfies<&bool>>()
 ///     .iter()
 ///     .map(|(e, x)| (e, x))
 ///     .collect::<Vec<_>>();
@@ -599,19 +599,19 @@ impl<T> Clone for FetchSatisfies<T> {
     }
 }
 
-/// A borrow of a [`World`](crate::World) sufficient to execute the query `Q`
+/// A borrow of a [`Frame`](crate::Frame) sufficient to execute the query `Q`
 ///
 /// Note that borrows are not released until this object is dropped.
 pub struct QueryBorrow<'w, Q: Query> {
-    world: &'w World,
+    frame: &'w Frame,
     borrowed: bool,
     _marker: PhantomData<Q>,
 }
 
 impl<'w, Q: Query> QueryBorrow<'w, Q> {
-    pub(crate) fn new(world: &'w World) -> Self {
+    pub(crate) fn new(frame: &'w Frame) -> Self {
         Self {
-            world,
+            frame: frame,
             borrowed: false,
             _marker: PhantomData,
         }
@@ -621,13 +621,13 @@ impl<'w, Q: Query> QueryBorrow<'w, Q> {
     // The lifetime narrowing here is required for soundness.
     pub fn iter(&mut self) -> QueryIter<'_, Q> {
         self.borrow();
-        unsafe { QueryIter::new(self.world) }
+        unsafe { QueryIter::new(self.frame) }
     }
 
     /// Provide random access to the query results
     pub fn view(&mut self) -> View<'_, Q> {
         self.borrow();
-        unsafe { View::new(self.world.entities_meta(), self.world.archetypes_inner()) }
+        unsafe { View::new(self.frame.entities_meta(), self.frame.archetypes_inner()) }
     }
 
     /// Like `iter`, but returns child iterators of at most `batch_size` elements
@@ -638,8 +638,8 @@ impl<'w, Q: Query> QueryBorrow<'w, Q> {
         self.borrow();
         unsafe {
             BatchedIter::new(
-                self.world.entities_meta(),
-                self.world.archetypes_inner().iter(),
+                self.frame.entities_meta(),
+                self.frame.archetypes_inner().iter(),
                 batch_size,
             )
         }
@@ -649,7 +649,7 @@ impl<'w, Q: Query> QueryBorrow<'w, Q> {
         if self.borrowed {
             return;
         }
-        start_borrow::<Q>(self.world.archetypes_inner());
+        start_borrow::<Q>(self.frame.archetypes_inner());
         self.borrowed = true;
     }
 
@@ -662,14 +662,14 @@ impl<'w, Q: Query> QueryBorrow<'w, Q> {
     /// # Example
     /// ```
     /// # use moss_hecs::*;
-    /// let mut world = World::new();
-    /// let a = world.spawn((123, true, "abc"));
-    /// let b = world.spawn((456, false));
-    /// let c = world.spawn((42, "def"));
-    /// let entities = world.query::<&i32>()
+    /// let mut frame = Frame::new();
+    /// let a = frame.spawn((123, true, "abc"));
+    /// let b = frame.spawn((456, false));
+    /// let c = frame.spawn((42, "def"));
+    /// let entities = frame.query::<&i32>()
     ///     .with::<&bool>()
     ///     .iter()
-    ///     .map(|(e, &i)| (e, i)) // Copy out of the world
+    ///     .map(|(e, &i)| (e, i)) // Copy out of the frame
     ///     .collect::<Vec<_>>();
     /// assert_eq!(entities.len(), 2);
     /// assert!(entities.contains(&(a, 123)));
@@ -686,14 +686,14 @@ impl<'w, Q: Query> QueryBorrow<'w, Q> {
     /// # Example
     /// ```
     /// # use moss_hecs::*;
-    /// let mut world = World::new();
-    /// let a = world.spawn((123, true, "abc"));
-    /// let b = world.spawn((456, false));
-    /// let c = world.spawn((42, "def"));
-    /// let entities = world.query::<&i32>()
+    /// let mut frame = Frame::new();
+    /// let a = frame.spawn((123, true, "abc"));
+    /// let b = frame.spawn((456, false));
+    /// let c = frame.spawn((42, "def"));
+    /// let entities = frame.query::<&i32>()
     ///     .without::<&bool>()
     ///     .iter()
-    ///     .map(|(e, &i)| (e, i)) // Copy out of the world
+    ///     .map(|(e, &i)| (e, i)) // Copy out of the frame
     ///     .collect::<Vec<_>>();
     /// assert_eq!(entities, &[(c, 42)]);
     /// ```
@@ -704,7 +704,7 @@ impl<'w, Q: Query> QueryBorrow<'w, Q> {
     /// Helper to change the type of the query
     fn transform<R: Query>(mut self) -> QueryBorrow<'w, R> {
         let x = QueryBorrow {
-            world: self.world,
+            frame: self.frame,
             borrowed: self.borrowed,
             _marker: PhantomData,
         };
@@ -720,7 +720,7 @@ unsafe impl<'w, Q: Query> Sync for QueryBorrow<'w, Q> where for<'a> Q::Item<'a>:
 impl<'w, Q: Query> Drop for QueryBorrow<'w, Q> {
     fn drop(&mut self) {
         if self.borrowed {
-            release_borrow::<Q>(self.world.archetypes_inner());
+            release_borrow::<Q>(self.frame.archetypes_inner());
         }
     }
 }
@@ -736,7 +736,7 @@ impl<'q, 'w, Q: Query> IntoIterator for &'q mut QueryBorrow<'w, Q> {
 
 /// Iterator over the set of entities with the components in `Q`
 pub struct QueryIter<'q, Q: Query> {
-    world: &'q World,
+    frame: &'q Frame,
     archetypes: core::ops::Range<usize>,
     iter: ChunkIter<Q>,
 }
@@ -745,11 +745,11 @@ impl<'q, Q: Query> QueryIter<'q, Q> {
     /// # Safety
     ///
     /// `'q` must be sufficient to guarantee that `Q` cannot violate borrow safety, either with
-    /// dynamic borrow checks or by representing exclusive access to the `World`.
-    unsafe fn new(world: &'q World) -> Self {
-        let n = world.archetypes().len();
+    /// dynamic borrow checks or by representing exclusive access to the `Frame`.
+    unsafe fn new(frame: &'q Frame) -> Self {
+        let n = frame.archetypes().len();
         Self {
-            world,
+            frame,
             archetypes: 0..n,
             iter: ChunkIter::empty(),
         }
@@ -760,7 +760,7 @@ impl<'q, Q: Query> QueryIter<'q, Q> {
     /// Outlined from `Iterator::next` for improved iteration performance.
     fn next_archetype(&mut self) -> Option<()> {
         let archetype = self.archetypes.next()?;
-        let archetype = unsafe { self.world.archetypes_inner().get_unchecked(archetype) };
+        let archetype = unsafe { self.frame.archetypes_inner().get_unchecked(archetype) };
         let state = Q::Fetch::prepare(archetype);
         let fetch = state.map(|state| Q::Fetch::execute(archetype, state));
         self.iter = fetch.map_or(ChunkIter::empty(), |fetch| ChunkIter::new(archetype, fetch));
@@ -787,7 +787,7 @@ impl<'q, Q: Query> Iterator for QueryIter<'q, Q> {
                         Entity {
                             id,
                             generation: unsafe {
-                                self.world
+                                self.frame
                                     .entities_meta()
                                     .get_unchecked(id as usize)
                                     .generation
@@ -810,7 +810,7 @@ impl<'q, Q: Query> ExactSizeIterator for QueryIter<'q, Q> {
     fn len(&self) -> usize {
         self.archetypes
             .clone()
-            .map(|x| unsafe { self.world.archetypes_inner().get_unchecked(x) })
+            .map(|x| unsafe { self.frame.archetypes_inner().get_unchecked(x) })
             .filter(|&x| Q::Fetch::access(x).is_some())
             .map(|x| x.len() as usize)
             .sum::<usize>()
@@ -824,11 +824,11 @@ pub struct QueryMut<'q, Q: Query> {
 }
 
 impl<'q, Q: Query> QueryMut<'q, Q> {
-    pub(crate) fn new(world: &'q mut World) -> Self {
+    pub(crate) fn new(frame: &'q mut Frame) -> Self {
         assert_borrow::<Q>();
 
         Self {
-            iter: unsafe { QueryIter::new(world) },
+            iter: unsafe { QueryIter::new(frame) },
         }
     }
 
@@ -836,8 +836,8 @@ impl<'q, Q: Query> QueryMut<'q, Q> {
     pub fn view(&mut self) -> View<'_, Q> {
         unsafe {
             View::new(
-                self.iter.world.entities_meta(),
-                self.iter.world.archetypes_inner(),
+                self.iter.frame.entities_meta(),
+                self.iter.frame.archetypes_inner(),
             )
         }
     }
@@ -859,7 +859,7 @@ impl<'q, Q: Query> QueryMut<'q, Q> {
     /// Helper to change the type of the query
     fn transform<R: Query>(self) -> QueryMut<'q, R> {
         QueryMut {
-            iter: unsafe { QueryIter::new(self.iter.world) },
+            iter: unsafe { QueryIter::new(self.iter.frame) },
         }
     }
 
@@ -869,8 +869,8 @@ impl<'q, Q: Query> QueryMut<'q, Q> {
     pub fn into_iter_batched(self, batch_size: u32) -> BatchedIter<'q, Q> {
         unsafe {
             BatchedIter::new(
-                self.iter.world.entities_meta(),
-                self.iter.world.archetypes_inner().iter(),
+                self.iter.frame.entities_meta(),
+                self.iter.frame.archetypes_inner().iter(),
                 batch_size,
             )
         }
@@ -961,7 +961,7 @@ impl<'q, Q: Query> BatchedIter<'q, Q> {
     /// # Safety
     ///
     /// `'q` must be sufficient to guarantee that `Q` cannot violate borrow safety, either with
-    /// dynamic borrow checks or by representing exclusive access to the `World`.
+    /// dynamic borrow checks or by representing exclusive access to the `Frame`.
     unsafe fn new(
         meta: &'q [EntityMeta],
         archetypes: SliceIter<'q, Archetype>,
@@ -1107,7 +1107,7 @@ macro_rules! tuple_impl {
 //smaller_tuples_too!(tuple_impl, B, A);
 smaller_tuples_too!(tuple_impl, O, N, M, L, K, J, I, H, G, F, E, D, C, B, A);
 
-/// A prepared query can be stored independently of the [`World`] to amortize query set-up costs.
+/// A prepared query can be stored independently of the [`Frame`] to amortize query set-up costs.
 pub struct PreparedQuery<Q: Query> {
     memo: (u64, u32),
     state: Box<[(usize, <Q::Fetch as Fetch>::State)]>,
@@ -1121,10 +1121,10 @@ impl<Q: Query> Default for PreparedQuery<Q> {
 }
 
 impl<Q: Query> PreparedQuery<Q> {
-    /// Create a prepared query which is not yet attached to any world
+    /// Create a prepared query which is not yet attached to any frame
     pub fn new() -> Self {
         Self {
-            // This memo will not match any world as the first ID will be 1.
+            // This memo will not match any frame as the first ID will be 1.
             memo: (0, 0),
             state: Default::default(),
             fetch: Default::default(),
@@ -1132,67 +1132,67 @@ impl<Q: Query> PreparedQuery<Q> {
     }
 
     #[cold]
-    fn prepare(world: &World) -> Self {
-        let memo = world.memo();
+    fn prepare(frame: &Frame) -> Self {
+        let memo = frame.memo();
 
-        let state = world
+        let state = frame
             .archetypes()
             .enumerate()
             .filter_map(|(idx, x)| Q::Fetch::prepare(x).map(|state| (idx, state)))
             .collect();
 
-        let fetch = world.archetypes().map(|_| None).collect();
+        let fetch = frame.archetypes().map(|_| None).collect();
 
         Self { memo, state, fetch }
     }
 
-    /// Query `world`, using dynamic borrow checking
+    /// Query `frame`, using dynamic borrow checking
     ///
     /// This will panic if it would violate an existing unique reference
     /// or construct an invalid unique reference.
-    pub fn query<'q>(&'q mut self, world: &'q World) -> PreparedQueryBorrow<'q, Q> {
-        if self.memo != world.memo() {
-            *self = Self::prepare(world);
+    pub fn query<'q>(&'q mut self, frame: &'q Frame) -> PreparedQueryBorrow<'q, Q> {
+        if self.memo != frame.memo() {
+            *self = Self::prepare(frame);
         }
 
-        let meta = world.entities_meta();
-        let archetypes = world.archetypes_inner();
+        let meta = frame.entities_meta();
+        let archetypes = frame.archetypes_inner();
 
         PreparedQueryBorrow::new(meta, archetypes, &self.state, &mut self.fetch)
     }
 
-    /// Query a uniquely borrowed world
+    /// Query a uniquely borrowed frame
     ///
     /// Avoids the cost of the dynamic borrow checking performed by [`query`][Self::query].
-    pub fn query_mut<'q>(&'q mut self, world: &'q mut World) -> PreparedQueryIter<'q, Q> {
+    pub fn query_mut<'q>(&'q mut self, frame: &'q mut Frame) -> PreparedQueryIter<'q, Q> {
         assert_borrow::<Q>();
 
-        if self.memo != world.memo() {
-            *self = Self::prepare(world);
+        if self.memo != frame.memo() {
+            *self = Self::prepare(frame);
         }
 
-        let meta = world.entities_meta();
-        let archetypes = world.archetypes_inner();
+        let meta = frame.entities_meta();
+        let archetypes = frame.archetypes_inner();
 
         unsafe { PreparedQueryIter::new(meta, archetypes, self.state.iter()) }
     }
 
-    /// Provide random access to query results for a uniquely borrow world
-    pub fn view_mut<'q>(&'q mut self, world: &'q mut World) -> PreparedView<'q, Q> {
+    /// Provide random access to query results for a uniquely borrow frame
+    pub fn view_mut<'q>(&'q mut self, frame: &'q mut Frame) -> PreparedView<'q, Q> {
         assert_borrow::<Q>();
 
-        if self.memo != world.memo() {
-            *self = Self::prepare(world);
+        if self.memo != frame.memo() {
+            *self = Self::prepare(frame);
         }
 
-        let meta = world.entities_meta();
-        let archetypes = world.archetypes_inner();
+        let meta = frame.entities_meta();
+        let archetypes = frame.archetypes_inner();
 
         unsafe { PreparedView::new(meta, archetypes, self.state.iter(), &mut self.fetch) }
     }
 }
 
-/// Combined borrow of a [`PreparedQuery`] and a [`World`]
+/// Combined borrow of a [`PreparedQuery`] and a [`Frame`]
 pub struct PreparedQueryBorrow<'q, Q: Query> {
     meta: &'q [EntityMeta],
     archetypes: &'q [Archetype],
@@ -1257,7 +1257,7 @@ impl<'q, Q: Query> PreparedQueryIter<'q, Q> {
     /// # Safety
     ///
     /// `'q` must be sufficient to guarantee that `Q` cannot violate borrow safety, either with
-    /// dynamic borrow checks or by representing exclusive access to the `World`.
+    /// dynamic borrow checks or by representing exclusive access to the `Frame`.
     unsafe fn new(
         meta: &'q [EntityMeta],
         archetypes: &'q [Archetype],
@@ -1331,7 +1331,7 @@ impl<'q, Q: Query> View<'q, Q> {
     /// # Safety
     ///
     /// `'q` must be sufficient to guarantee that `Q` cannot violate borrow safety, either with
-    /// dynamic borrow checks or by representing exclusive access to the `World`.
+    /// dynamic borrow checks or by representing exclusive access to the `Frame`.
     pub(crate) unsafe fn new(meta: &'q [EntityMeta], archetypes: &'q [Archetype]) -> Self {
         let fetch = archetypes
             .iter()
@@ -1407,14 +1407,14 @@ impl<'q, Q: Query> View<'q, Q> {
     /// # Examples
     ///
     /// ```
-    /// # use moss_hecs::World;
-    /// let mut world = World::new();
+    /// # use moss_hecs::Frame;
+    /// let mut frame = Frame::new();
     ///
-    /// let a = world.spawn((1, 1.0));
-    /// let b = world.spawn((2, 4.0));
-    /// let c = world.spawn((3, 9.0));
+    /// let a = frame.spawn((1, 1.0));
+    /// let b = frame.spawn((2, 4.0));
+    /// let c = frame.spawn((3, 9.0));
     ///
-    /// let mut query = world.query_mut::<&mut i32>();
+    /// let mut query = frame.query_mut::<&mut i32>();
     /// let mut view = query.view();
     /// let [a,b,c] = view.get_mut_n([a, b, c]);
     ///
@@ -1518,7 +1518,7 @@ impl<'q, Q: Query> PreparedView<'q, Q> {
     /// # Safety
     ///
     /// `'q` must be sufficient to guarantee that `Q` cannot violate borrow safety, either with
-    /// dynamic borrow checks or by representing exclusive access to the `World`.
+    /// dynamic borrow checks or by representing exclusive access to the `Frame`.
     unsafe fn new(
         meta: &'q [EntityMeta],
         archetypes: &'q [Archetype],
@@ -1641,7 +1641,7 @@ impl<'a, 'q, Q: Query> IntoIterator for &'a mut PreparedView<'q, Q> {
     }
 }
 
-/// A borrow of a [`World`](crate::World) sufficient to random-access the results of the query `Q`.
+/// A borrow of a [`Frame`](crate::Frame) sufficient to random-access the results of the query `Q`.
 ///
 /// Note that borrows are not released until this object is dropped.
 ///
@@ -1651,9 +1651,9 @@ pub struct ViewBorrow<'w, Q: Query> {
 }
 
 impl<'w, Q: Query> ViewBorrow<'w, Q> {
-    pub(crate) fn new(world: &'w World) -> Self {
-        start_borrow::<Q>(world.archetypes_inner());
-        let view = unsafe { View::<Q>::new(world.entities_meta(), world.archetypes_inner()) };
+    pub(crate) fn new(frame: &'w Frame) -> Self {
+        start_borrow::<Q>(frame.archetypes_inner());
+        let view = unsafe { View::<Q>::new(frame.entities_meta(), frame.archetypes_inner()) };
 
         Self { view }
     }
@@ -1708,14 +1708,14 @@ impl<'w, Q: Query> ViewBorrow<'w, Q> {
     /// # Examples
     ///
     /// ```
-    /// # use moss_hecs::World;
-    /// let mut world = World::new();
+    /// # use moss_hecs::Frame;
+    /// let mut frame = Frame::new();
     ///
-    /// let a = world.spawn((1, 1.0));
-    /// let b = world.spawn((2, 4.0));
-    /// let c = world.spawn((3, 9.0));
+    /// let a = frame.spawn((1, 1.0));
+    /// let b = frame.spawn((2, 4.0));
+    /// let c = frame.spawn((3, 9.0));
     ///
-    /// let mut view = world.view_mut::<&mut i32>();
+    /// let mut view = frame.view_mut::<&mut i32>();
     /// let [a, b, c] = view.get_mut_n([a, b, c]);
     ///
     /// assert_eq!(*a.unwrap(), 1);

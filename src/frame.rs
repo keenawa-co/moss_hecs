@@ -46,7 +46,7 @@ use crate::{
 /// following spawns and despawns, that handle may, in rare circumstances, collide with a
 /// newly-allocated `Entity` handle. Very long-lived applications should therefore limit the period
 /// over which they may retain handles of despawned entities.
-pub struct World {
+pub struct Frame {
     entities: Entities,
     archetypes: ArchetypeSet,
     /// Maps statically-typed bundle types to archetypes
@@ -60,8 +60,8 @@ pub struct World {
     id: u64,
 }
 
-impl World {
-    /// Create an empty world
+impl Frame {
+    /// Create an empty frame
     pub fn new() -> Self {
         // AtomicU64 is unsupported on 32-bit MIPS and PPC architectures
         // For compatibility, use Mutex<u64>
@@ -97,9 +97,9 @@ impl World {
     /// # Example
     /// ```
     /// # use moss_hecs::*;
-    /// let mut world = World::new();
-    /// let a = world.spawn((123, "abc"));
-    /// let b = world.spawn((456, true));
+    /// let mut frame = Frame::new();
+    /// let a = frame.spawn((123, "abc"));
+    /// let b = frame.spawn((456, true));
     /// ```
     pub fn spawn(&mut self, components: impl DynamicBundle) -> Entity {
         // Ensure all entity allocations are accounted for so `self.entities` can realloc if
@@ -120,19 +120,19 @@ impl World {
     /// Despawns any existing entity with the same [`Entity::id`].
     ///
     /// Useful for easy handle-preserving deserialization. Be cautious resurrecting old `Entity`
-    /// handles in already-populated worlds as it vastly increases the likelihood of collisions.
+    /// handles in already-populated frames as it vastly increases the likelihood of collisions.
     ///
     /// # Example
     /// ```
     /// # use moss_hecs::*;
-    /// let mut world = World::new();
-    /// let a = world.spawn((123, "abc"));
-    /// let b = world.spawn((456, true));
-    /// world.despawn(a);
-    /// assert!(!world.contains(a));
+    /// let mut frame = Frame::new();
+    /// let a = frame.spawn((123, "abc"));
+    /// let b = frame.spawn((456, true));
+    /// frame.despawn(a);
+    /// assert!(!frame.contains(a));
     /// // all previous Entity values pointing to 'a' will be live again, instead pointing to the new entity.
-    /// world.spawn_at(a, (789, "ABC"));
-    /// assert!(world.contains(a));
+    /// frame.spawn_at(a, (789, "ABC"));
+    /// assert!(frame.contains(a));
     /// ```
     pub fn spawn_at(&mut self, handle: Entity, components: impl DynamicBundle) {
         // Ensure all entity allocations are accounted for so `self.entities` can realloc if
@@ -183,10 +183,10 @@ impl World {
     /// # Example
     /// ```
     /// # use moss_hecs::*;
-    /// let mut world = World::new();
-    /// let entities = world.spawn_batch((0..1_000).map(|i| (i, "abc"))).collect::<Vec<_>>();
+    /// let mut frame = Frame::new();
+    /// let entities = frame.spawn_batch((0..1_000).map(|i| (i, "abc"))).collect::<Vec<_>>();
     /// for i in 0..1_000 {
-    ///     assert_eq!(*world.get::<&i32>(entities[i]).unwrap(), i as i32);
+    ///     assert_eq!(*frame.get::<&i32>(entities[i]).unwrap(), i as i32);
     /// }
     /// ```
     pub fn spawn_batch<I>(&mut self, iter: I) -> SpawnBatchIter<'_, I::IntoIter>
@@ -283,8 +283,8 @@ impl World {
     /// Allocate many entities ID concurrently
     ///
     /// Unlike [`spawn`](Self::spawn), this can be called concurrently with other operations on the
-    /// [`World`] such as queries, but does not immediately create the entities. Reserved entities
-    /// are not visible to queries or world iteration, but can be otherwise operated on
+    /// [`Frame`] such as queries, but does not immediately create the entities. Reserved entities
+    /// are not visible to queries or frame iteration, but can be otherwise operated on
     /// freely. Operations that add or remove components or entities, such as `insert` or `despawn`,
     /// will cause all outstanding reserved entities to become real entities before proceeding. This
     /// can also be done explicitly by calling [`flush`](Self::flush).
@@ -356,7 +356,7 @@ impl World {
     /// Efficiently iterate over all entities that have certain components, using dynamic borrow
     /// checking
     ///
-    /// Prefer [`query_mut`](Self::query_mut) when concurrent access to the [`World`] is not required.
+    /// Prefer [`query_mut`](Self::query_mut) when concurrent access to the [`Frame`] is not required.
     ///
     /// Calling `iter` on the returned value yields `(Entity, Q)` tuples, where `Q` is some query
     /// type. A query type is any type for which an implementation of [`Query`] exists, e.g. `&T`,
@@ -372,24 +372,24 @@ impl World {
     /// Iterating a query will panic if it would violate an existing unique reference or construct
     /// an invalid unique reference. This occurs when two simultaneously-active queries could expose
     /// the same entity. Simultaneous queries can access the same component type if and only if the
-    /// world contains no entities that have all components required by both queries, assuming no
+    /// frame contains no entities that have all components required by both queries, assuming no
     /// other component borrows are outstanding.
     ///
     /// Iterating a query yields references with lifetimes bound to the [`QueryBorrow`] returned
     /// here. To ensure those are invalidated, the return value of this method must be dropped for
-    /// its dynamic borrows from the world to be released. Similarly, lifetime rules ensure that
+    /// its dynamic borrows from the frame to be released. Similarly, lifetime rules ensure that
     /// references obtained from a query cannot outlive the [`QueryBorrow`].
     ///
     /// # Example
     /// ```
     /// # use moss_hecs::*;
-    /// let mut world = World::new();
-    /// let a = world.spawn((123, true, "abc"));
-    /// let b = world.spawn((456, false));
-    /// let c = world.spawn((42, "def"));
-    /// let entities = world.query::<(&i32, &bool)>()
+    /// let mut frame = Frame::new();
+    /// let a = frame.spawn((123, true, "abc"));
+    /// let b = frame.spawn((456, false));
+    /// let c = frame.spawn((42, "def"));
+    /// let entities = frame.query::<(&i32, &bool)>()
     ///     .iter()
-    ///     .map(|(e, (&i, &b))| (e, i, b)) // Copy out of the world
+    ///     .map(|(e, (&i, &b))| (e, i, b)) // Copy out of the frame
     ///     .collect::<Vec<_>>();
     /// assert_eq!(entities.len(), 2);
     /// assert!(entities.contains(&(a, 123, true)));
@@ -405,13 +405,13 @@ impl World {
     }
 
     /// Provide random access to any entity for a given Query on a uniquely
-    /// borrowed world. Like [`view`](Self::view), but faster because dynamic borrow checks can be skipped.
+    /// borrowed frame. Like [`view`](Self::view), but faster because dynamic borrow checks can be skipped.
     pub fn view_mut<Q: Query>(&mut self) -> View<'_, Q> {
         assert_borrow::<Q>();
         unsafe { View::<Q>::new(self.entities_meta(), self.archetypes_inner()) }
     }
 
-    /// Query a uniquely borrowed world
+    /// Query a uniquely borrowed frame
     ///
     /// Like [`query`](Self::query), but faster because dynamic borrow checks can be skipped. Note
     /// that, unlike [`query`](Self::query), this returns an `IntoIterator` which can be passed
@@ -436,7 +436,7 @@ impl World {
 
     /// Prepare a query against a single entity, using dynamic borrow checking
     ///
-    /// Prefer [`query_one_mut`](Self::query_one_mut) when concurrent access to the [`World`] is not
+    /// Prefer [`query_one_mut`](Self::query_one_mut) when concurrent access to the [`Frame`] is not
     /// required.
     ///
     /// Call [`get`](QueryOne::get) on the resulting [`QueryOne`] to actually execute the query. The
@@ -448,10 +448,10 @@ impl World {
     /// # Example
     /// ```
     /// # use moss_hecs::*;
-    /// let mut world = World::new();
-    /// let a = world.spawn((123, true, "abc"));
+    /// let mut frame = Frame::new();
+    /// let a = frame.spawn((123, true, "abc"));
     /// // The returned query must outlive the borrow made by `get`
-    /// let mut query = world.query_one::<(&mut i32, &bool)>(a).unwrap();
+    /// let mut query = frame.query_one::<(&mut i32, &bool)>(a).unwrap();
     /// let (number, flag) = query.get().unwrap();
     /// if *flag { *number *= 2; }
     /// assert_eq!(*number, 246);
@@ -466,7 +466,7 @@ impl World {
         })
     }
 
-    /// Query a single entity in a uniquely borrowed world
+    /// Query a single entity in a uniquely borrowed frame
     ///
     /// Like [`query_one`](Self::query_one), but faster because dynamic borrow checks can be
     /// skipped. Note that, unlike [`query_one`](Self::query_one), on success this returns the
@@ -484,7 +484,7 @@ impl World {
         unsafe { Ok(Q::get(&fetch, loc.index as usize)) }
     }
 
-    /// Query a fixed number of distinct entities in a uniquely borrowed world
+    /// Query a fixed number of distinct entities in a uniquely borrowed frame
     ///
     /// Like [`query_one_mut`](Self::query_one_mut), but for multiple entities, which would
     /// otherwise be forbidden by the unique borrow. Panics if the same entity occurs more than
@@ -545,7 +545,7 @@ impl World {
         self.entities.resolve_unknown_gen(id)
     }
 
-    /// Iterate over all entities in the world
+    /// Iterate over all entities in the frame
     ///
     /// Entities are yielded in arbitrary order. Prefer [`query`](Self::query) for better
     /// performance when components will be accessed in predictable patterns.
@@ -553,10 +553,10 @@ impl World {
     /// # Example
     /// ```
     /// # use moss_hecs::*;
-    /// let mut world = World::new();
-    /// let a = world.spawn(());
-    /// let b = world.spawn(());
-    /// let ids = world.iter().map(|entity_ref| entity_ref.entity()).collect::<Vec<_>>();
+    /// let mut frame = Frame::new();
+    /// let a = frame.spawn(());
+    /// let b = frame.spawn(());
+    /// let ids = frame.iter().map(|entity_ref| entity_ref.entity()).collect::<Vec<_>>();
     /// assert_eq!(ids.len(), 2);
     /// assert!(ids.contains(&a));
     /// assert!(ids.contains(&b));
@@ -575,11 +575,11 @@ impl World {
     /// # Example
     /// ```
     /// # use moss_hecs::*;
-    /// let mut world = World::new();
-    /// let e = world.spawn((123, "abc"));
-    /// world.insert(e, (456, true));
-    /// assert_eq!(*world.get::<&i32>(e).unwrap(), 456);
-    /// assert_eq!(*world.get::<&bool>(e).unwrap(), true);
+    /// let mut frame = Frame::new();
+    /// let e = frame.spawn((123, "abc"));
+    /// frame.insert(e, (456, true));
+    /// assert_eq!(*frame.get::<&i32>(e).unwrap(), 456);
+    /// assert_eq!(*frame.get::<&bool>(e).unwrap(), true);
     /// ```
     pub fn insert(
         &mut self,
@@ -694,12 +694,12 @@ impl World {
     /// # Example
     /// ```
     /// # use moss_hecs::*;
-    /// let mut world = World::new();
-    /// let e = world.spawn((123, "abc", true));
-    /// assert_eq!(world.remove::<(i32, &str)>(e), Ok((123, "abc")));
-    /// assert!(world.get::<&i32>(e).is_err());
-    /// assert!(world.get::<&&str>(e).is_err());
-    /// assert_eq!(*world.get::<&bool>(e).unwrap(), true);
+    /// let mut frame = Frame::new();
+    /// let e = frame.spawn((123, "abc", true));
+    /// assert_eq!(frame.remove::<(i32, &str)>(e), Ok((123, "abc")));
+    /// assert!(frame.get::<&i32>(e).is_err());
+    /// assert!(frame.get::<&&str>(e).is_err());
+    /// assert_eq!(*frame.get::<&bool>(e).unwrap(), true);
     /// ```
     pub fn remove<T: Bundle + 'static>(&mut self, entity: Entity) -> Result<T, ComponentError> {
         self.flush();
@@ -824,7 +824,7 @@ impl World {
     ///
     /// # Safety
     ///
-    /// `entity` must have been previously obtained from this [`World`], and no unique borrow of the
+    /// `entity` must have been previously obtained from this [`Frame`], and no unique borrow of the
     /// same component of `entity` may be live simultaneous to the returned reference.
     pub unsafe fn get_unchecked<'a, T: ComponentRef<'a>>(
         &'a self,
@@ -864,7 +864,7 @@ impl World {
 
     /// Despawn `entity`, yielding a [`DynamicBundle`] of its components
     ///
-    /// Useful for moving entities between worlds.
+    /// Useful for moving entities between frames.
     pub fn take(&mut self, entity: Entity) -> Result<TakenEntity<'_>, NoSuchEntity> {
         self.flush();
         let loc = self.entities.get(entity)?;
@@ -892,10 +892,10 @@ impl World {
     /// # Example
     /// ```
     /// # use moss_hecs::*;
-    /// let mut world = World::new();
-    /// let initial_gen = world.archetypes_generation();
-    /// world.spawn((123, "abc"));
-    /// assert_ne!(initial_gen, world.archetypes_generation());
+    /// let mut frame = Frame::new();
+    /// let initial_gen = frame.archetypes_generation();
+    /// frame.spawn((123, "abc"));
+    /// assert_ne!(initial_gen, frame.archetypes_generation());
     /// ```
     pub fn archetypes_generation(&self) -> ArchetypesGeneration {
         ArchetypesGeneration(self.archetypes.generation())
@@ -914,16 +914,16 @@ impl World {
     }
 }
 
-unsafe impl Send for World {}
-unsafe impl Sync for World {}
+unsafe impl Send for Frame {}
+unsafe impl Sync for Frame {}
 
-impl Default for World {
+impl Default for Frame {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<'a> IntoIterator for &'a World {
+impl<'a> IntoIterator for &'a Frame {
     type IntoIter = Iter<'a>;
     type Item = EntityRef<'a>;
     fn into_iter(self) -> Iter<'a> {
@@ -1008,7 +1008,7 @@ impl From<NoSuchEntity> for QueryOneError {
 pub trait Component: Send + Sync + 'static {}
 impl<T: Send + Sync + 'static> Component for T {}
 
-/// Iterator over all of a world's entities
+/// Iterator over all of a frame's entities
 pub struct Iter<'a> {
     archetypes: core::slice::Iter<'a, Archetype>,
     entities: &'a Entities,
@@ -1074,7 +1074,7 @@ impl ExactSizeIterator for Iter<'_> {
     }
 }
 
-impl<A: DynamicBundle> Extend<A> for World {
+impl<A: DynamicBundle> Extend<A> for Frame {
     fn extend<T>(&mut self, iter: T)
     where
         T: IntoIterator<Item = A>,
@@ -1085,19 +1085,19 @@ impl<A: DynamicBundle> Extend<A> for World {
     }
 }
 
-impl<A: DynamicBundle> core::iter::FromIterator<A> for World {
+impl<A: DynamicBundle> core::iter::FromIterator<A> for Frame {
     fn from_iter<I: IntoIterator<Item = A>>(iter: I) -> Self {
-        let mut world = World::new();
-        world.extend(iter);
-        world
+        let mut frame = Frame::new();
+        frame.extend(iter);
+        frame
     }
 }
 
-/// Determines freshness of information derived from [`World::archetypes`]
+/// Determines freshness of information derived from [`Frame::archetypes`]
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct ArchetypesGeneration(u32);
 
-/// Entity IDs created by [`World::spawn_batch`]
+/// Entity IDs created by [`Frame::spawn_batch`]
 pub struct SpawnBatchIter<'a, I>
 where
     I: Iterator,
@@ -1158,7 +1158,7 @@ where
     }
 }
 
-/// Iterator over [`Entity`]s spawned by [`World::spawn_column_batch()`]
+/// Iterator over [`Entity`]s spawned by [`Frame::spawn_column_batch()`]
 pub struct SpawnColumnBatchIter<'a> {
     pending_end: usize,
     id_alloc: crate::entities::AllocManyState,
@@ -1335,62 +1335,62 @@ mod tests {
 
     #[test]
     fn reuse_empty() {
-        let mut world = World::new();
-        let a = world.spawn(());
-        world.despawn(a).unwrap();
-        let b = world.spawn(());
+        let mut frame = Frame::new();
+        let a = frame.spawn(());
+        frame.despawn(a).unwrap();
+        let b = frame.spawn(());
         assert_eq!(a.id, b.id);
         assert_ne!(a.generation, b.generation);
     }
 
     #[test]
     fn clear_repeats_entity_id() {
-        let mut world = World::new();
-        let a = world.spawn(());
-        world.clear();
-        let b = world.spawn(());
+        let mut frame = Frame::new();
+        let a = frame.spawn(());
+        frame.clear();
+        let b = frame.spawn(());
         assert_eq!(a.id, b.id);
         assert_eq!(a.generation, b.generation);
     }
 
     #[test]
     fn spawn_at() {
-        let mut world = World::new();
-        let a = world.spawn(());
-        world.despawn(a).unwrap();
-        let b = world.spawn(());
-        assert!(world.contains(b));
+        let mut frame = Frame::new();
+        let a = frame.spawn(());
+        frame.despawn(a).unwrap();
+        let b = frame.spawn(());
+        assert!(frame.contains(b));
         assert_eq!(a.id, b.id);
         assert_ne!(a.generation, b.generation);
-        world.spawn_at(a, ());
-        assert!(!world.contains(b));
+        frame.spawn_at(a, ());
+        assert!(!frame.contains(b));
         assert_eq!(b.id, a.id);
         assert_ne!(b.generation, a.generation);
     }
 
     #[test]
     fn reuse_populated() {
-        let mut world = World::new();
-        let a = world.spawn((42,));
-        assert_eq!(*world.get::<&i32>(a).unwrap(), 42);
-        world.despawn(a).unwrap();
-        let b = world.spawn((true,));
+        let mut frame = Frame::new();
+        let a = frame.spawn((42,));
+        assert_eq!(*frame.get::<&i32>(a).unwrap(), 42);
+        frame.despawn(a).unwrap();
+        let b = frame.spawn((true,));
         assert_eq!(a.id, b.id);
         assert_ne!(a.generation, b.generation);
-        assert!(world.get::<&i32>(b).is_err());
-        assert!(*world.get::<&bool>(b).unwrap());
+        assert!(frame.get::<&i32>(b).is_err());
+        assert!(*frame.get::<&bool>(b).unwrap());
     }
 
     #[test]
     fn remove_nothing() {
-        let mut world = World::new();
-        let a = world.spawn(("abc", 123));
-        world.remove::<()>(a).unwrap();
+        let mut frame = Frame::new();
+        let a = frame.spawn(("abc", 123));
+        frame.remove::<()>(a).unwrap();
     }
 
     #[test]
     fn bad_insert() {
-        let mut world = World::new();
-        assert!(world.insert_one(Entity::DANGLING, ()).is_err());
+        let mut frame = Frame::new();
+        assert!(frame.insert_one(Entity::DANGLING, ()).is_err());
     }
 }

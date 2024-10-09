@@ -5,37 +5,37 @@
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE-APACHE)
 
 moss_hecs provides a high-performance, minimalist entity-component-system (ECS)
-world. It is a library, not a framework. In place of an explicit "System"
-abstraction, a `World`'s entities are easily queried from regular code. Organize
+frame. It is a library, not a framework. In place of an explicit "System"
+abstraction, a `Frame`'s entities are easily queried from regular code. Organize
 your application however you like!
 
 ### Example
 
 ```rust
-let mut world = World::new();
+let mut frame = Frame::new();
 // Nearly any type can be used as a component with zero boilerplate
-let a = world.spawn((123, true, "abc"));
-let b = world.spawn((42, false));
+let a = frame.spawn((123, true, "abc"));
+let b = frame.spawn((42, false));
 // Systems can be simple for loops
-for (id, (number, &flag)) in world.query_mut::<(&mut i32, &bool)>() {
+for (id, (number, &flag)) in frame.query_mut::<(&mut i32, &bool)>() {
   if flag { *number *= 2; }
 }
 // Random access is simple and safe
-assert_eq!(*world.get::<&i32>(a).unwrap(), 246);
-assert_eq!(*world.get::<&i32>(b).unwrap(), 42);
+assert_eq!(*frame.get::<&i32>(a).unwrap(), 246);
+assert_eq!(*frame.get::<&i32>(b).unwrap(), 42);
 ```
 
 ### Why ECS?
 
 Entity-component-system architecture makes it easy to compose loosely-coupled
-state and behavior. An ECS world consists of:
+state and behavior. An ECS frame consists of:
 
 - any number of **entities**, which represent distinct objects
 - a collection of **component** data associated with each entity, where each
   entity has at most one component of any type, and two entities may have
   different components
 
-That world is then manipulated by **systems**, each of which accesses all
+That frame is then manipulated by **systems**, each of which accesses all
 entities having a particular set of component types. Systems implement
 self-contained behavior like physics (e.g. by accessing "position", "velocity",
 and "collision" components) or rendering (e.g. by accessing "position" and
@@ -70,15 +70,15 @@ architecture such as storing each type of entity in a separate plain
 `Vec`. Similarly, ECS may be overkill for games that don't call for
 batch processing of entities.
 
-Even for games that benefit, an ECS world is not a be-all end-all data
+Even for games that benefit, an ECS frame is not a be-all end-all data
 structure. Most games will store significant amounts of state in other
 structures. For example, many games maintain a spatial index structure
 (e.g. a tile map or bounding volume hierarchy) used to find entities
 and obstacles near a certain location for efficient collision
-detection without searching the entire world.
+detection without searching the entire frame.
 
 If you need to search for specific entities using criteria other than the types
-of their components, consider maintaining a specialized index beside your world,
+of their components, consider maintaining a specialized index beside your frame,
 storing `Entity` handles and whatever other data is necessary. Insert into the
 index when spawning relevant entities, and include a component with that allows
 efficiently removing them from the index when despawning.

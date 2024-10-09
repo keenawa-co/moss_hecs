@@ -3,7 +3,7 @@ use core::marker::PhantomData;
 use crate::query::{assert_borrow, Fetch, With, Without};
 use crate::{Archetype, Query};
 
-/// A borrow of a [`World`](crate::World) sufficient to execute the query `Q` on a single entity
+/// A borrow of a [`Frame`](crate::Frame) sufficient to execute the query `Q` on a single entity
 pub struct QueryOne<'a, Q: Query> {
     archetype: &'a Archetype,
     index: u32,

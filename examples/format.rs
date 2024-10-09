@@ -30,7 +30,7 @@ fn format_entity(entity: moss_hecs::EntityRef<'_>) -> String {
 }
 
 fn main() {
-    let mut world = moss_hecs::World::new();
-    let e = world.spawn((42, true));
-    println!("{}", format_entity(world.entity(e).unwrap()));
+    let mut frame = moss_hecs::Frame::new();
+    let e = frame.spawn((42, true));
+    println!("{}", format_entity(frame.entity(e).unwrap()));
 }

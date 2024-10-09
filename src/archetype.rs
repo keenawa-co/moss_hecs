@@ -23,7 +23,7 @@ use crate::{Access, Component, ComponentRef, Query};
 /// A collection of entities having the same component types
 ///
 /// Accessing `Archetype`s is only required in niche cases. Typical use should go through the
-/// [`World`](crate::World).
+/// [`Frame`](crate::Frame).
 pub struct Archetype {
     types: Vec<TypeInfo>,
     type_ids: Box<[TypeId]>,
@@ -196,8 +196,8 @@ impl Archetype {
     /// Convenient for dispatching logic which needs to be performed on sets of type ids.  For
     /// example, suppose you're building a scripting system, and you want to integrate the scripting
     /// language with your ECS. This functionality allows you to iterate through all of the
-    /// archetypes of the world with [`World::archetypes()`](crate::World::archetypes()) and extract
-    /// all possible combinations of component types which are currently stored in the `World`.
+    /// archetypes of the frame with [`Frame::archetypes()`](crate::Frame::archetypes()) and extract
+    /// all possible combinations of component types which are currently stored in the `Frame`.
     /// From there, you can then create a mapping of archetypes to wrapper objects for your
     /// scripting language that provide functionality based off of the components of any given
     /// [`Entity`], and bind them onto an [`Entity`] when passed into your scripting language by
@@ -414,7 +414,7 @@ impl Archetype {
     /// Raw IDs of the entities in this archetype
     ///
     /// Convertible into [`Entity`](crate::Entity)s with
-    /// [`World::find_entity_from_id()`](crate::World::find_entity_from_id). Useful for efficient
+    /// [`Frame::find_entity_from_id()`](crate::Frame::find_entity_from_id). Useful for efficient
     /// serialization.
     #[inline]
     pub fn ids(&self) -> &[u32] {

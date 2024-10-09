@@ -2,25 +2,25 @@
 
 ### Added
 
-- `examples/cloning` is a new example showing how to clone `World` with some or all components
+- `examples/cloning` is a new example showing how to clone `Frame` with some or all components
 - Added `ColumnBatchType::add_dynamic()` to allow construction of batches for bulk insertion of
   component data into archetypes. This is useful for inserting data into archetypes where type
-  information for each component is only available at runtime - e.g. the cloning World example.
+  information for each component is only available at runtime - e.g. the cloning Frame example.
 
 ### Changed
 
-- `TypeIdMap` and `TypeInfo` are now public to facilitate easy cloning of `World`
+- `TypeIdMap` and `TypeInfo` are now public to facilitate easy cloning of `Frame`
 
 # 0.10.5
 
 ### Added
 
-- `World::query_many_mut` to conveniently query a few entities concurrently
+- `Frame::query_many_mut` to conveniently query a few entities concurrently
 - `bundle_satisfies_query` and `dynamic_bundle_satisfies_query` to
   easily check whether an entity containing certain components would
   match a query
-- `World::{view, view_mut}` convenience short-hand for constructing a
-  view directly from a `World`
+- `Frame::{view, view_mut}` convenience short-hand for constructing a
+  view directly from a `Frame`
 - `ChangeTracker` helper to detect changes to components using `PartialEq`
 
 ### Changed
@@ -74,7 +74,7 @@
 
 ### Fixed
 
-- `World::{query_one, query_one_mut}` allowed violating a unique borrow.
+- `Frame::{query_one, query_one_mut}` allowed violating a unique borrow.
 
 # 0.9.1
 
@@ -86,7 +86,7 @@
 
 ### Changed
 
-- Updated `World::get_unchecked` to match 0.8's changes to `World::get`
+- Updated `Frame::get_unchecked` to match 0.8's changes to `Frame::get`
 
 # 0.8.3
 
@@ -110,15 +110,15 @@
 
 ### Added
 
-- `World::satisfies` and `EntityRef::satisfies` to check if an entity would match a query
+- `Frame::satisfies` and `EntityRef::satisfies` to check if an entity would match a query
 
 ### Changed
 
 - Many generic methods that previously took a `Component` now instead take either a
   `ComponentRef<'a>` or a `Query` to improve consistency with queries and address a common footgun:
-  - `World::get`, `EntityRef::get`, and `Archetype::get` now take shared or unique references to
+  - `Frame::get`, `EntityRef::get`, and `Archetype::get` now take shared or unique references to
     component types.
-  - Since `World::get_mut` and `EntityRef::get_mut` have been subsumed by their respective `get`
+  - Since `Frame::get_mut` and `EntityRef::get_mut` have been subsumed by their respective `get`
     methods, they have been removed.
   - `EntityBuilder` and `EntityBuilderClone`'s `get` and `get_mut` were refactored along the same
     lines for consistency. However, the `get_mut` method was not removed for these types since they
@@ -144,7 +144,7 @@
 
 ### Added
 
-- `World::take` for moving complete entities between worlds
+- `Frame::take` for moving complete entities between frames
 - `CommandBuffer::remove` and `CommandBuffer::despawn`
 
 ### Fixed
@@ -171,7 +171,7 @@
 ### Fixed
 
 - `derive(DynamicBundleClone)` had an unintended dependency on `DynamicClone` being in scope
-- `World::len` was incorrect following `World::clear`
+- `Frame::len` was incorrect following `Frame::clear`
 - Missing re-export of `PreparedView`
 
 # 0.7.3
@@ -184,13 +184,13 @@
 
 ### Added
 
-- `World::exchange` provides an optimized path for a remove immediately followed by an insert
+- `Frame::exchange` provides an optimized path for a remove immediately followed by an insert
 - Efficient random access can be performed within queries using `QueryBorrow::view` and similar
   methods, a generalization of `Column`/`ColumnMut`.
 
 ### Changed
 
-- `World::column`/`column_mut` deprecated in favor of views.
+- `Frame::column`/`column_mut` deprecated in favor of views.
 
 # 0.7.1
 
@@ -208,9 +208,9 @@
 - `EntityBuilderClone` helper for working with dynamic collections of
   components that may be used repeatedly
 - `Satisfies` query combinator, which yields a `bool` without borrowing any components
-- `World::column` and `column_mut` for efficient random access within
+- `Frame::column` and `column_mut` for efficient random access within
   a single component type
-- `CommandBuffer` helper for recording operations on a world in advance
+- `CommandBuffer` helper for recording operations on a frame in advance
 
 ### Changed
 
@@ -242,7 +242,7 @@
 ### Fixed
 
 - An invalid `Entity` could panic rather than returning the appropriate error, especially after
-  `World::clear`
+  `Frame::clear`
 - Reexported `BatchIncomplete`
 
 # 0.6.2
@@ -261,14 +261,14 @@
 
 ### Changed
 
-- `World::iter` no longer returns entity IDs directly; they can now instead be fetched from the
+- `Frame::iter` no longer returns entity IDs directly; they can now instead be fetched from the
   `EntityRef`
-- `World::spawn_batch` and `World::reserve` now employ `Vec`-style amortized resizing, improving
+- `Frame::spawn_batch` and `Frame::reserve` now employ `Vec`-style amortized resizing, improving
   performance when called repeatedly.
 
 ### Added
 
-- `EntityRef::query` as an alternative to `World::query_one` when you already have an `EntityRef`
+- `EntityRef::query` as an alternative to `Frame::query_one` when you already have an `EntityRef`
 - `EntityRef::entity` accessor for recovering the entity's handle
 - `PreparedQuery` for improved performance when repeatedly issuing the same query
 
@@ -276,7 +276,7 @@
 
 ### Fixed
 
-- `World::query_mut` did not prevent aliasing mutable borrows within the query
+- `Frame::query_mut` did not prevent aliasing mutable borrows within the query
 
 # 0.5.1
 
@@ -292,7 +292,7 @@
 
 ### Fixed
 
-- `World::archetypes_generation` not updated when a column batch spawn introduces a new archetype
+- `Frame::archetypes_generation` not updated when a column batch spawn introduces a new archetype
 
 # 0.4.0
 
@@ -316,8 +316,8 @@
 ### Added
 
 - The `serde` feature, enabling serialization of `Entity` handles, and a `serialization` module to
-  simplify (de)serializing worlds
-- `World::len()` exposing the number of live entities
+  simplify (de)serializing frames
+- `Frame::len()` exposing the number of live entities
 - Access to component data inside `Archetypes` to allow custom column-major operations
 - `ColumnBatch` for efficiently spawning collections of entities with the same components when those
   components' types are not statically known
@@ -340,15 +340,15 @@ been possible without their hard work!
 
 - `#[derive(Query)]` for more ergonomic specification of complex queries
 - Support for generic, tuple, and unit structs in `#[derive(Bundle)]`
-- `World::query_mut` and `World::query_one_mut` reduce setup cost when dynamic borrow checks are
+- `Frame::query_mut` and `Frame::query_one_mut` reduce setup cost when dynamic borrow checks are
   unnecessary
 - `QueryItem<'a, Q>` type alias identifying the output of the query `Q` borrowing for lifetime `'a`
-- `World::find_entity_from_id` allows finding a live entity's `Entity` handle from its 32-bit `id`.
-- `World::spawn_at` allows creating a new entity for an existing `Entity` handle, enabling easier
+- `Frame::find_entity_from_id` allows finding a live entity's `Entity` handle from its 32-bit `id`.
+- `Frame::spawn_at` allows creating a new entity for an existing `Entity` handle, enabling easier
   deserialization.
 - `Archetype::component_types` simplifies certain scripting patterns
 
 ### Fixed
 
-- Panic when passing empty bundles to `World::remove`
+- Panic when passing empty bundles to `Frame::remove`
 - Misbehavior when using tuple bundles with multiple fields of the same type
