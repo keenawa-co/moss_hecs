@@ -1,4 +1,4 @@
-use hecs::Bundle;
+use moss_hecs::Bundle;
 
 #[derive(Bundle)]
 struct Foo<T> {

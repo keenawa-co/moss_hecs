@@ -65,7 +65,7 @@ pub fn derive(input: DeriveInput) -> Result<TokenStream2> {
     };
     let fetches = queries
         .iter()
-        .map(|ty| quote! { <#ty as ::hecs::Query>::Fetch })
+        .map(|ty| quote! { <#ty as ::moss_hecs::Query>::Fetch })
         .collect::<Vec<_>>();
     let fetch_ident = Ident::new(&format!("{}Fetch", ident), Span::call_site());
     let fetch = match data.fields {
@@ -89,13 +89,13 @@ pub fn derive(input: DeriveInput) -> Result<TokenStream2> {
             #[derive(Clone, Copy)]
             #vis struct #state_ident {
                 #(
-                    #fields: <#fetches as ::hecs::Fetch>::State,
+                    #fields: <#fetches as ::moss_hecs::Fetch>::State,
                 )*
             }
         },
         syn::Fields::Unnamed(_) => quote! {
             #[derive(Clone, Copy)]
-            #vis struct #state_ident(#(<#fetches as ::hecs::Fetch>::State),*);
+            #vis struct #state_ident(#(<#fetches as ::moss_hecs::Fetch>::State),*);
         },
         syn::Fields::Unit => quote! {
             #[derive(Clone, Copy)]
@@ -118,7 +118,7 @@ pub fn derive(input: DeriveInput) -> Result<TokenStream2> {
             #[derive(Clone)]
             #fetch
 
-            impl<'a> ::hecs::Query for #ident<'a> {
+            impl<'a> ::moss_hecs::Query for #ident<'a> {
                 type Item<'q> = #ident<'q>;
 
                 type Fetch = #fetch_ident;
@@ -126,7 +126,7 @@ pub fn derive(input: DeriveInput) -> Result<TokenStream2> {
                 #[allow(unused_variables)]
                 unsafe fn get<'q>(fetch: &Self::Fetch, n: usize) -> Self::Item<'q> {
                     #(
-                        let #intermediates: <#queries as ::hecs::Query>::Item<'q> = <#queries as ::hecs::Query>::get(&fetch.#fields, n);
+                        let #intermediates: <#queries as ::moss_hecs::Query>::Item<'q> = <#queries as ::moss_hecs::Query>::get(&fetch.#fields, n);
                     )*
                     #ident {#(#fields: #intermediates,)*}
                 }
@@ -134,7 +134,7 @@ pub fn derive(input: DeriveInput) -> Result<TokenStream2> {
 
             #state
 
-            unsafe impl ::hecs::Fetch for #fetch_ident {
+            unsafe impl ::moss_hecs::Fetch for #fetch_ident {
                 type State = #state_ident;
 
                 fn dangling() -> Self {
@@ -146,8 +146,8 @@ pub fn derive(input: DeriveInput) -> Result<TokenStream2> {
                 }
 
                 #[allow(unused_variables, unused_mut)]
-                fn access(archetype: &::hecs::Archetype) -> ::core::option::Option<::hecs::Access> {
-                    let mut access = ::hecs::Access::Iterate;
+                fn access(archetype: &::moss_hecs::Archetype) -> ::core::option::Option<::moss_hecs::Access> {
+                    let mut access = ::moss_hecs::Access::Iterate;
                     #(
                         access = ::core::cmp::max(access, #fetches::access(archetype)?);
                     )*
@@ -155,12 +155,12 @@ pub fn derive(input: DeriveInput) -> Result<TokenStream2> {
                 }
 
                 #[allow(unused_variables)]
-                fn borrow(archetype: &::hecs::Archetype, state: Self::State) {
+                fn borrow(archetype: &::moss_hecs::Archetype, state: Self::State) {
                     #(#fetches::borrow(archetype, state.#fields);)*
                 }
 
                 #[allow(unused_variables)]
-                fn prepare(archetype: &::hecs::Archetype) -> ::core::option::Option<Self::State> {
+                fn prepare(archetype: &::moss_hecs::Archetype) -> ::core::option::Option<Self::State> {
                     ::core::option::Option::Some(#state_ident {
                         #(
                             #fields: #fetches::prepare(archetype)?,
@@ -169,7 +169,7 @@ pub fn derive(input: DeriveInput) -> Result<TokenStream2> {
                 }
 
                 #[allow(unused_variables)]
-                fn execute(archetype: &::hecs::Archetype, state: Self::State) -> Self {
+                fn execute(archetype: &::moss_hecs::Archetype, state: Self::State) -> Self {
                     Self {
                         #(
                             #fields: #fetches::execute(archetype, state.#fields),
@@ -178,14 +178,14 @@ pub fn derive(input: DeriveInput) -> Result<TokenStream2> {
                 }
 
                 #[allow(unused_variables)]
-                fn release(archetype: &::hecs::Archetype, state: Self::State) {
+                fn release(archetype: &::moss_hecs::Archetype, state: Self::State) {
                     #(#fetches::release(archetype, state.#fields);)*
                 }
 
                 #[allow(unused_variables, unused_mut)]
                 fn for_each_borrow(mut f: impl ::core::ops::FnMut(::core::any::TypeId, bool)) {
                     #(
-                        <#fetches as ::hecs::Fetch>::for_each_borrow(&mut f);
+                        <#fetches as ::moss_hecs::Fetch>::for_each_borrow(&mut f);
                     )*
                 }
             }

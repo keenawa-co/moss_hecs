@@ -1,14 +1,14 @@
-//! This example demonstrates using the [ColumnBatch][hecs::ColumnBatch] API to efficiently clone
+//! This example demonstrates using the [ColumnBatch][moss_hecs::ColumnBatch] API to efficiently clone
 //! the entities in a [World] along with some or all components.
 //!
 //! Note that the cloned world may have different iteration order and/or newly created entity ids
 //! may diverge between the original and newly created worlds. If that is a dealbreaker for you,
-//! see https://github.com/Ralith/hecs/issues/332 for some pointers on preserving entity allocator
-//! state; as of time of writing, you'll need to patch `hecs`.
+//! see https://github.com/Ralith/moss_hecs/issues/332 for some pointers on preserving entity allocator
+//! state; as of time of writing, you'll need to patch `moss_hecs`.
 
 use std::any::TypeId;
 
-use hecs::{Archetype, ColumnBatchBuilder, ColumnBatchType, Component, TypeIdMap, TypeInfo, World};
+use moss_hecs::{Archetype, ColumnBatchBuilder, ColumnBatchType, Component, TypeIdMap, TypeInfo, World};
 
 struct ComponentCloneMetadata {
     type_info: TypeInfo,

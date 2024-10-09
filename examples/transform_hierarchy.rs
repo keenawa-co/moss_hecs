@@ -3,7 +3,7 @@
 //! it, which might be parented to a boat they're standing in. Expressing relative positions
 //! directly in a component makes computing correct absolute transforms easy and fast.
 
-use hecs::*;
+use moss_hecs::*;
 
 /// Component of entities that are positioned relative to a parent entity
 struct Parent {

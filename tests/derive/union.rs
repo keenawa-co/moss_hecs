@@ -1,4 +1,4 @@
-use hecs::{Bundle, Query};
+use moss_hecs::{Bundle, Query};
 
 #[derive(Query)]
 union Foo {

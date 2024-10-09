@@ -384,7 +384,7 @@ unsafe impl<L: Fetch, R: Fetch> Fetch for FetchOr<L, R> {
 ///
 /// # Example
 /// ```
-/// # use hecs::*;
+/// # use moss_hecs::*;
 /// let mut world = World::new();
 /// let a = world.spawn((123, true, "abc"));
 /// let b = world.spawn((456, false));
@@ -461,7 +461,7 @@ impl<F: Clone, G> Clone for FetchWithout<F, G> {
 ///
 /// # Example
 /// ```
-/// # use hecs::*;
+/// # use moss_hecs::*;
 /// let mut world = World::new();
 /// let a = world.spawn((123, true, "abc"));
 /// let b = world.spawn((456, false));
@@ -538,7 +538,7 @@ impl<F: Clone, G> Clone for FetchWith<F, G> {
 ///
 /// # Example
 /// ```
-/// # use hecs::*;
+/// # use moss_hecs::*;
 /// let mut world = World::new();
 /// let a = world.spawn((123, true, "abc"));
 /// let b = world.spawn((456, false));
@@ -661,7 +661,7 @@ impl<'w, Q: Query> QueryBorrow<'w, Q> {
     ///
     /// # Example
     /// ```
-    /// # use hecs::*;
+    /// # use moss_hecs::*;
     /// let mut world = World::new();
     /// let a = world.spawn((123, true, "abc"));
     /// let b = world.spawn((456, false));
@@ -685,7 +685,7 @@ impl<'w, Q: Query> QueryBorrow<'w, Q> {
     ///
     /// # Example
     /// ```
-    /// # use hecs::*;
+    /// # use moss_hecs::*;
     /// let mut world = World::new();
     /// let a = world.spawn((123, true, "abc"));
     /// let b = world.spawn((456, false));
@@ -1407,7 +1407,7 @@ impl<'q, Q: Query> View<'q, Q> {
     /// # Examples
     ///
     /// ```
-    /// # use hecs::World;
+    /// # use moss_hecs::World;
     /// let mut world = World::new();
     ///
     /// let a = world.spawn((1, 1.0));
@@ -1708,7 +1708,7 @@ impl<'w, Q: Query> ViewBorrow<'w, Q> {
     /// # Examples
     ///
     /// ```
-    /// # use hecs::World;
+    /// # use moss_hecs::World;
     /// let mut world = World::new();
     ///
     /// let a = world.spawn((1, 1.0));

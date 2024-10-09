@@ -51,7 +51,7 @@ impl<'a> EntityRef<'a> {
     ///
     /// # Example
     /// ```
-    /// # use hecs::*;
+    /// # use moss_hecs::*;
     /// let mut world = World::new();
     /// let a = world.spawn((42, "abc"));
     /// let e = world.entity(a).unwrap();
@@ -72,7 +72,7 @@ impl<'a> EntityRef<'a> {
     ///
     /// # Example
     /// ```
-    /// # use hecs::*;
+    /// # use moss_hecs::*;
     /// let mut world = World::new();
     /// let a = world.spawn((123, true, "abc"));
     /// // The returned query must outlive the borrow made by `get`
@@ -142,7 +142,7 @@ impl<'a, T: ?Sized> Ref<'a, T> {
     /// # Examples
     ///
     /// ```no_run
-    /// # use hecs::{EntityRef, Ref};
+    /// # use moss_hecs::{EntityRef, Ref};
     /// struct Component {
     ///     member: i32,
     /// }
@@ -229,7 +229,7 @@ impl<'a, T: ?Sized> RefMut<'a, T> {
     /// # Examples
     ///
     /// ```no_run
-    /// # use hecs::{EntityRef, RefMut};
+    /// # use moss_hecs::{EntityRef, RefMut};
     /// struct Component {
     ///     member: i32,
     /// }

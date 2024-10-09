@@ -96,7 +96,7 @@ impl World {
     ///
     /// # Example
     /// ```
-    /// # use hecs::*;
+    /// # use moss_hecs::*;
     /// let mut world = World::new();
     /// let a = world.spawn((123, "abc"));
     /// let b = world.spawn((456, true));
@@ -124,7 +124,7 @@ impl World {
     ///
     /// # Example
     /// ```
-    /// # use hecs::*;
+    /// # use moss_hecs::*;
     /// let mut world = World::new();
     /// let a = world.spawn((123, "abc"));
     /// let b = world.spawn((456, true));
@@ -182,7 +182,7 @@ impl World {
     ///
     /// # Example
     /// ```
-    /// # use hecs::*;
+    /// # use moss_hecs::*;
     /// let mut world = World::new();
     /// let entities = world.spawn_batch((0..1_000).map(|i| (i, "abc"))).collect::<Vec<_>>();
     /// for i in 0..1_000 {
@@ -382,7 +382,7 @@ impl World {
     ///
     /// # Example
     /// ```
-    /// # use hecs::*;
+    /// # use moss_hecs::*;
     /// let mut world = World::new();
     /// let a = world.spawn((123, true, "abc"));
     /// let b = world.spawn((456, false));
@@ -447,7 +447,7 @@ impl World {
     ///
     /// # Example
     /// ```
-    /// # use hecs::*;
+    /// # use moss_hecs::*;
     /// let mut world = World::new();
     /// let a = world.spawn((123, true, "abc"));
     /// // The returned query must outlive the borrow made by `get`
@@ -552,7 +552,7 @@ impl World {
     ///
     /// # Example
     /// ```
-    /// # use hecs::*;
+    /// # use moss_hecs::*;
     /// let mut world = World::new();
     /// let a = world.spawn(());
     /// let b = world.spawn(());
@@ -574,7 +574,7 @@ impl World {
     ///
     /// # Example
     /// ```
-    /// # use hecs::*;
+    /// # use moss_hecs::*;
     /// let mut world = World::new();
     /// let e = world.spawn((123, "abc"));
     /// world.insert(e, (456, true));
@@ -693,7 +693,7 @@ impl World {
     ///
     /// # Example
     /// ```
-    /// # use hecs::*;
+    /// # use moss_hecs::*;
     /// let mut world = World::new();
     /// let e = world.spawn((123, "abc", true));
     /// assert_eq!(world.remove::<(i32, &str)>(e), Ok((123, "abc")));
@@ -891,7 +891,7 @@ impl World {
     ///
     /// # Example
     /// ```
-    /// # use hecs::*;
+    /// # use moss_hecs::*;
     /// let mut world = World::new();
     /// let initial_gen = world.archetypes_generation();
     /// world.spawn((123, "abc"));

@@ -6,7 +6,7 @@
 // copied, modified, or distributed except according to those terms.
 
 use bencher::{benchmark_group, benchmark_main, Bencher};
-use hecs::*;
+use moss_hecs::*;
 
 #[derive(Clone)]
 struct Position(f32);

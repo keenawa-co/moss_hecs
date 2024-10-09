@@ -3,7 +3,7 @@
 #![no_std]
 #![allow(clippy::disallowed_names)]
 
-use hecs::{Bundle, Query};
+use moss_hecs::{Bundle, Query};
 
 #[derive(Bundle)]
 pub struct Foo {

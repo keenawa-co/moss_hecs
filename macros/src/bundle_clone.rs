@@ -30,14 +30,14 @@ fn gen_dynamic_bundle_impl(
 ) -> TokenStream2 {
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     quote! {
-        unsafe impl #impl_generics ::hecs::DynamicBundleClone for #ident #ty_generics #where_clause {
+        unsafe impl #impl_generics ::moss_hecs::DynamicBundleClone for #ident #ty_generics #where_clause {
             #[allow(clippy::forget_copy)]
-            unsafe fn put_with_clone(mut self, mut f: impl ::core::ops::FnMut(*mut u8, ::hecs::TypeInfo, ::hecs::DynamicClone)) {
+            unsafe fn put_with_clone(mut self, mut f: impl ::core::ops::FnMut(*mut u8, ::moss_hecs::TypeInfo, ::moss_hecs::DynamicClone)) {
                 #(
                     f(
                         (&mut self.#field_members as *mut #tys).cast::<u8>(),
-                        ::hecs::TypeInfo::of::<#tys>(),
-                        ::hecs::DynamicClone::new::<#tys>()
+                        ::moss_hecs::TypeInfo::of::<#tys>(),
+                        ::moss_hecs::DynamicClone::new::<#tys>()
                     );
                     ::core::mem::forget(self.#field_members);
                 )*

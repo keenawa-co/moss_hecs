@@ -22,7 +22,7 @@ use crate::{Component, World};
 /// Useful when operations cannot be applied directly due to ordering concerns or borrow checking.
 ///
 /// ```
-/// # use hecs::*;
+/// # use moss_hecs::*;
 /// let mut world = World::new();
 /// let entity = world.reserve_entity();
 /// let mut cmd = CommandBuffer::new();

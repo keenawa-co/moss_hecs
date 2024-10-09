@@ -1,4 +1,4 @@
-use hecs::Query;
+use moss_hecs::Query;
 
 #[derive(Query)]
 struct Foo<'a> {

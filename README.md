@@ -1,10 +1,10 @@
-# hecs
+# moss_hecs
 
-[![Documentation](https://docs.rs/hecs/badge.svg)](https://docs.rs/hecs/)
-[![Crates.io](https://img.shields.io/crates/v/hecs.svg)](https://crates.io/crates/hecs)
+[![Documentation](https://docs.rs/moss_hecs/badge.svg)](https://docs.rs/moss_hecs/)
+[![Crates.io](https://img.shields.io/crates/v/moss_hecs.svg)](https://crates.io/crates/moss_hecs)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE-APACHE)
 
-hecs provides a high-performance, minimalist entity-component-system (ECS)
+moss_hecs provides a high-performance, minimalist entity-component-system (ECS)
 world. It is a library, not a framework. In place of an explicit "System"
 abstraction, a `World`'s entities are easily queried from regular code. Organize
 your application however you like!
@@ -53,7 +53,7 @@ require far-reaching changes.
 #### Performance
 
 In addition to having excellent composability, the ECS paradigm can also provide
-exceptional speed and cache locality. `hecs` internally tracks groups of
+exceptional speed and cache locality. `moss_hecs` internally tracks groups of
 entities which all have the same components. Each group has a dense, contiguous
 array for each type of component. When a system accesses all entities with a
 certain set of components, a fast linear traversal can be made through each
@@ -63,7 +63,7 @@ accesses, bypassing unneeded data, maximizing cache use and minimizing latency.
 
 ### Why Not ECS?
 
-hecs strives to be lightweight and unobtrusive so it can be useful in
+moss_hecs strives to be lightweight and unobtrusive so it can be useful in
 a wide range of applications. Even so, it's not appropriate for every
 game. If your game will have few types of entities, consider a simpler
 architecture such as storing each type of entity in a separate plain
@@ -85,7 +85,7 @@ efficiently removing them from the index when despawning.
 
 ### Other Libraries
 
-hecs owes a great deal to the free exchange of ideas in Rust's ECS library
+moss_hecs owes a great deal to the free exchange of ideas in Rust's ECS library
 ecosystem. Particularly influential examples include:
 
 - [bevy], which continually pushes the envelope for performance and ergonomics
@@ -94,14 +94,14 @@ ecosystem. Particularly influential examples include:
 - [legion], which demonstrated archetypal memory layout and trait-less
   components
 
-If hecs doesn't suit you, one of those might do the trick!
+If moss_hecs doesn't suit you, one of those might do the trick!
 
 ## License
 
 Licensed under either of
 
- * Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
- * MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+- Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
+- MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
 
 at your option.
 

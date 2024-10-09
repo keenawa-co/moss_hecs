@@ -40,27 +40,27 @@ fn gen_dynamic_bundle_impl(
 ) -> TokenStream2 {
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     quote! {
-        unsafe impl #impl_generics ::hecs::DynamicBundle for #ident #ty_generics #where_clause {
-            fn has<__hecs__T: ::hecs::Component>(&self) -> bool {
-                false #(|| ::core::any::TypeId::of::<#tys>() == ::core::any::TypeId::of::<__hecs__T>())*
+        unsafe impl #impl_generics ::moss_hecs::DynamicBundle for #ident #ty_generics #where_clause {
+            fn has<__moss_hecs__T: ::moss_hecs::Component>(&self) -> bool {
+                false #(|| ::core::any::TypeId::of::<#tys>() == ::core::any::TypeId::of::<__moss_hecs__T>())*
             }
 
             fn key(&self) -> ::core::option::Option<::core::any::TypeId> {
                 ::core::option::Option::Some(::core::any::TypeId::of::<Self>())
             }
 
-            fn with_ids<__hecs__T>(&self, f: impl ::core::ops::FnOnce(&[::core::any::TypeId]) -> __hecs__T) -> __hecs__T {
-                <Self as ::hecs::Bundle>::with_static_ids(f)
+            fn with_ids<__moss_hecs__T>(&self, f: impl ::core::ops::FnOnce(&[::core::any::TypeId]) -> __moss_hecs__T) -> __moss_hecs__T {
+                <Self as ::moss_hecs::Bundle>::with_static_ids(f)
             }
 
-            fn type_info(&self) -> ::hecs::alloc::vec::Vec<::hecs::TypeInfo> {
-                <Self as ::hecs::Bundle>::with_static_type_info(|info| info.to_vec())
+            fn type_info(&self) -> ::moss_hecs::alloc::vec::Vec<::moss_hecs::TypeInfo> {
+                <Self as ::moss_hecs::Bundle>::with_static_type_info(|info| info.to_vec())
             }
 
             #[allow(clippy::forget_copy, clippy::forget_non_drop)]
-            unsafe fn put(mut self, mut f: impl ::core::ops::FnMut(*mut u8, ::hecs::TypeInfo)) {
+            unsafe fn put(mut self, mut f: impl ::core::ops::FnMut(*mut u8, ::moss_hecs::TypeInfo)) {
                 #(
-                    f((&mut self.#field_members as *mut #tys).cast::<u8>(), ::hecs::TypeInfo::of::<#tys>());
+                    f((&mut self.#field_members as *mut #tys).cast::<u8>(), ::moss_hecs::TypeInfo::of::<#tys>());
                     ::core::mem::forget(self.#field_members);
                 )*
             }
@@ -94,7 +94,7 @@ fn gen_bundle_impl(
     };
     let with_static_ids_body = if generics.params.is_empty() {
         quote! {
-            static ELEMENTS: ::hecs::spin::lazy::Lazy<[::core::any::TypeId; #num_tys]> = ::hecs::spin::lazy::Lazy::new(|| {
+            static ELEMENTS: ::moss_hecs::spin::lazy::Lazy<[::core::any::TypeId; #num_tys]> = ::moss_hecs::spin::lazy::Lazy::new(|| {
                 #with_static_ids_inner
             });
             f(&*ELEMENTS)
@@ -105,25 +105,25 @@ fn gen_bundle_impl(
         }
     };
     quote! {
-        unsafe impl #impl_generics ::hecs::Bundle for #ident #ty_generics #where_clause {
+        unsafe impl #impl_generics ::moss_hecs::Bundle for #ident #ty_generics #where_clause {
             #[allow(non_camel_case_types)]
-            fn with_static_ids<__hecs__T>(f: impl ::core::ops::FnOnce(&[::core::any::TypeId]) -> __hecs__T) -> __hecs__T {
+            fn with_static_ids<__moss_hecs__T>(f: impl ::core::ops::FnOnce(&[::core::any::TypeId]) -> __moss_hecs__T) -> __moss_hecs__T {
                 #with_static_ids_body
             }
 
             #[allow(non_camel_case_types)]
-            fn with_static_type_info<__hecs__T>(f: impl ::core::ops::FnOnce(&[::hecs::TypeInfo]) -> __hecs__T) -> __hecs__T {
-                let mut info: [::hecs::TypeInfo; #num_tys] = [#(::hecs::TypeInfo::of::<#tys>()),*];
+            fn with_static_type_info<__moss_hecs__T>(f: impl ::core::ops::FnOnce(&[::moss_hecs::TypeInfo]) -> __moss_hecs__T) -> __moss_hecs__T {
+                let mut info: [::moss_hecs::TypeInfo; #num_tys] = [#(::moss_hecs::TypeInfo::of::<#tys>()),*];
                 info.sort_unstable();
                 f(&info)
             }
 
             unsafe fn get(
-                mut f: impl ::core::ops::FnMut(::hecs::TypeInfo) -> ::core::option::Option<::core::ptr::NonNull<u8>>,
-            ) -> ::core::result::Result<Self, ::hecs::MissingComponent> {
+                mut f: impl ::core::ops::FnMut(::moss_hecs::TypeInfo) -> ::core::option::Option<::core::ptr::NonNull<u8>>,
+            ) -> ::core::result::Result<Self, ::moss_hecs::MissingComponent> {
                 #(
-                    let #field_idents = f(::hecs::TypeInfo::of::<#tys>())
-                            .ok_or_else(::hecs::MissingComponent::new::<#tys>)?
+                    let #field_idents = f(::moss_hecs::TypeInfo::of::<#tys>())
+                            .ok_or_else(::moss_hecs::MissingComponent::new::<#tys>)?
                             .cast::<#tys>()
                             .as_ptr();
                 )*
@@ -137,15 +137,15 @@ fn gen_bundle_impl(
 fn gen_unit_struct_bundle_impl(ident: syn::Ident, generics: &syn::Generics) -> TokenStream2 {
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     quote! {
-        unsafe impl #impl_generics ::hecs::Bundle for #ident #ty_generics #where_clause {
+        unsafe impl #impl_generics ::moss_hecs::Bundle for #ident #ty_generics #where_clause {
             #[allow(non_camel_case_types)]
-            fn with_static_ids<__hecs__T>(f: impl ::core::ops::FnOnce(&[::core::any::TypeId]) -> __hecs__T) -> __hecs__T { f(&[]) }
+            fn with_static_ids<__moss_hecs__T>(f: impl ::core::ops::FnOnce(&[::core::any::TypeId]) -> __moss_hecs__T) -> __moss_hecs__T { f(&[]) }
             #[allow(non_camel_case_types)]
-            fn with_static_type_info<__hecs__T>(f: impl ::core::ops::FnOnce(&[::hecs::TypeInfo]) -> __hecs__T) -> __hecs__T { f(&[]) }
+            fn with_static_type_info<__moss_hecs__T>(f: impl ::core::ops::FnOnce(&[::moss_hecs::TypeInfo]) -> __moss_hecs__T) -> __moss_hecs__T { f(&[]) }
 
             unsafe fn get(
-                mut f: impl ::core::ops::FnMut(::hecs::TypeInfo) -> ::core::option::Option<::core::ptr::NonNull<u8>>,
-            ) -> ::core::result::Result<Self, ::hecs::MissingComponent> {
+                mut f: impl ::core::ops::FnMut(::moss_hecs::TypeInfo) -> ::core::option::Option<::core::ptr::NonNull<u8>>,
+            ) -> ::core::result::Result<Self, ::moss_hecs::MissingComponent> {
                 ::core::result::Result::Ok(Self {/* for some reason this works for all unit struct variations */})
             }
         }
@@ -157,7 +157,7 @@ fn make_component_trait_bound() -> syn::TraitBound {
         paren_token: None,
         modifier: syn::TraitBoundModifier::None,
         lifetimes: None,
-        path: syn::parse_quote!(::hecs::Component),
+        path: syn::parse_quote!(::moss_hecs::Component),
     }
 }
 

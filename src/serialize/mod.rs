@@ -6,7 +6,7 @@
 //! procedures explicitly.
 //!
 //! Backwards-incompatible changes to the serde data models herein are subject to the same semantic
-//! versioning stability guarantees as the hecs API.
+//! versioning stability guarantees as the moss_hecs API.
 
 #[cfg(feature = "column-serialize")]
 #[cfg_attr(docsrs, doc(cfg(feature = "column-serialize")))]

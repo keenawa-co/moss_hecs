@@ -7,18 +7,18 @@
 
 //! A handy ECS
 //!
-//! hecs provides a high-performance, minimalist entity-component-system (ECS) world. It is a
+//! moss_hecs provides a high-performance, minimalist entity-component-system (ECS) world. It is a
 //! library, not a framework. In place of an explicit "System" abstraction, a `World`'s entities are
 //! easily queried from regular code. Organize your application however you like!
 //!
-//! In order of importance, hecs pursues:
+//! In order of importance, moss_hecs pursues:
 //! - fast traversals
 //! - a simple interface
 //! - a small dependency closure
 //! - exclusion of externally-implementable functionality
 //!
 //! ```
-//! # use hecs::*;
+//! # use moss_hecs::*;
 //! let mut world = World::new();
 //! // Nearly any type can be used as a component with zero boilerplate
 //! let a = world.spawn((123, true, "abc"));
@@ -114,7 +114,7 @@ pub use bundle::DynamicClone;
 pub use query::Fetch;
 
 #[cfg(feature = "macros")]
-pub use hecs_macros::{Bundle, DynamicBundleClone, Query};
+pub use moss_hecs_macros::{Bundle, DynamicBundleClone, Query};
 
 fn align(x: usize, alignment: usize) -> usize {
     debug_assert!(alignment.is_power_of_two());

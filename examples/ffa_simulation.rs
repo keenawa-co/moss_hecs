@@ -1,4 +1,4 @@
-use hecs::*;
+use moss_hecs::*;
 use rand::{thread_rng, Rng};
 use std::io;
 

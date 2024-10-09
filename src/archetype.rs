@@ -547,7 +547,7 @@ impl TypeInfo {
 
     /// Construct a `TypeInfo` from its components. This is useful in the rare case that you have
     /// some kind of pointer to raw bytes/erased memory holding a component type, coming from a
-    /// source unrelated to hecs, and you want to treat it as an insertable component by
+    /// source unrelated to moss_hecs, and you want to treat it as an insertable component by
     /// implementing the `DynamicBundle` API.
     pub fn from_parts(id: TypeId, layout: Layout, drop: unsafe fn(*mut u8)) -> Self {
         Self {

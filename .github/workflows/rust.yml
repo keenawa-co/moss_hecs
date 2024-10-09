@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: ['master']
+    branches: ["master"]
   pull_request:
 
 jobs:
@@ -23,9 +23,9 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
 
-      - run: cargo build -p hecs --all-targets ${{ matrix.features }}
+      - run: cargo build -p moss_hecs --all-targets ${{ matrix.features }}
 
-      - run: cargo test -p hecs ${{ matrix.features }}
+      - run: cargo test -p moss_hecs ${{ matrix.features }}
 
   no-std-build-test:
     runs-on: ubuntu-latest

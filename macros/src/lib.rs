@@ -23,7 +23,7 @@ use syn::{parse_macro_input, DeriveInput};
 ///
 /// # Example
 /// ```
-/// # use hecs::*;
+/// # use moss_hecs::*;
 /// #[derive(Bundle)]
 /// struct Foo {
 ///     x: i32,
@@ -71,7 +71,7 @@ pub fn derive_dynamic_bundle_clone(input: TokenStream) -> TokenStream {
 ///
 /// # Example
 /// ```
-/// # use hecs::*;
+/// # use moss_hecs::*;
 /// #[derive(Query, Debug, PartialEq)]
 /// struct Foo<'a> {
 ///     x: &'a i32,
